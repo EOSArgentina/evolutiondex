@@ -49,7 +49,6 @@ void evolutiondex::withdraw(name user, name smartctr, asset to_withdraw){
 }
 
 void evolutiondex::transfer( const name& from, const name& to, const asset& quantity, const string& memo)
-// agregar variable de fee inicial
 {
     check( from != to, "cannot transfer to self" );
     require_auth( from );
@@ -160,6 +159,7 @@ void evolutiondex::add_balance( const name& user, const extended_asset& to_add )
 
 void evolutiondex::inittoken(name user, name smartctr1, asset asset1, 
     name smartctr2, asset asset2, asset new_token, name fee_contract)
+// agregar variable de fee inicial
 { 
     require_auth( user );
     check(asset1.symbol != asset2.symbol, "connector symbols must be different");
