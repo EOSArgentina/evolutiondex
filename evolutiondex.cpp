@@ -49,10 +49,11 @@ void evolutiondex::withdraw(name user, name smartctr, asset to_withdraw){
 }
 
 void evolutiondex::transfer( const name& from, const name& to, const asset& quantity, const string& memo)
+// agregar variable de fee inicial
 {
     check( from != to, "cannot transfer to self" );
     require_auth( from );
-    check(quantity.amount > 0, "quantity must be positive"); // qué mira "isvalid"?
+    check(quantity.amount > 0, "quantity must be positive"); // comparar con chequeos en eosio.token
 
     require_recipient( from );
     require_recipient( to );
@@ -78,7 +79,7 @@ void evolutiondex::buytoken(name user, asset asset1, asset asset2, asset min_exp
     require_auth(user);
     check(asset1.amount >= 0, "quantity must be positive");
     check(asset2.amount >= 0, "quantity must be positive");
-    check(min_expected.amount >= 0, "quantity must be positive");
+    check(min_expected.amount > 0, "quantity must be positive");
     operate_token(user, asset1, asset2, min_expected, false);
 }
 
@@ -106,16 +107,19 @@ asset min_expected, bool is_exchange_operation){
         ext_asset1.quantity.amount = E_out;
         print("tokens out: ", ext_asset1, "\n");
     } else {
-        tok_out = tokens_out(A, E, V, E_in, V_in);
+        tok_out = A * pow( ((double)E+(double)E_in)/(double)E, HALF ) * 
+      pow( ((double)V+(double)V_in) / (double)V, HALF ) - A; 
         check(tok_out >= min_expected.amount, "available is less than expected");
         extended_asset ext_asset_add = extended_asset{asset{tok_out, min_expected.symbol}, get_self()};
         print("tokens out: ", ext_asset_add, "\n");
         add_balance(user, ext_asset_add);
     }
 
-    double dfee((double) token->fee / 1000);
-    int64_t fee1 = ext_asset1.quantity.amount <= 0 ? 0 : (ext_asset1.quantity.amount + 999) * dfee;
-    int64_t fee2 = ext_asset2.quantity.amount <= 0 ? 0 : (ext_asset2.quantity.amount + 999) * dfee;
+    double dfee((double) token->fee / 10000);  // ¿está bien usar double?
+    int64_t fee1 = (ext_asset1.quantity.amount <= 0) || (dfee == 0) ? 0 : 
+      ( ext_asset1.quantity.amount + 9999/token->fee ) * dfee;
+    int64_t fee2 = (ext_asset2.quantity.amount <= 0) || (dfee == 0) ? 0 : 
+      ( ext_asset2.quantity.amount + 9999/token->fee ) * dfee;
     print("Fees: ", fee1, " ", fee2, "\n");
 
     ext_asset1.quantity.amount += fee1;
@@ -128,8 +132,8 @@ asset min_expected, bool is_exchange_operation){
       a.supply.amount += tok_out;
       a.connector1 += ext_asset1;
       a.connector2 += ext_asset2;
-      print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, 
-        ". Connector 2: ", a.connector2 );
+      print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2 );
+      print("\nFee parameter:", a.fee);
     });
 }
 
@@ -154,12 +158,6 @@ void evolutiondex::add_balance( const name& user, const extended_asset& to_add )
     });
 }
 
-int64_t evolutiondex::tokens_out(int64_t A, int64_t E, int64_t V, int64_t E_in, int64_t V_in) {
-    int64_t result = A * pow( ((double)E+(double)E_in)/(double)E, HALF ) * pow( ((double)V+(double)V_in)
-    / (double)V, HALF )  - A; 
-    return result;
-}
-
 void evolutiondex::inittoken(name user, name smartctr1, asset asset1, 
     name smartctr2, asset asset2, asset new_token, name fee_contract)
 { 
@@ -174,7 +172,6 @@ void evolutiondex::inittoken(name user, name smartctr1, asset asset1,
     add_balance(user, -ext_asset1);
     add_balance(user, -ext_asset2);
 
-    // emplace de stats
     stats statstable( get_self(), get_self().value );
     auto token = statstable.find( new_token.symbol.code().raw() );
     check ( token == statstable.end(), "token already exists" );
@@ -188,7 +185,8 @@ void evolutiondex::inittoken(name user, name smartctr1, asset asset1,
     } ); 
 }
 
-void evolutiondex::changefee(symbol sym, int newfee) {  // función no testeada 
+void evolutiondex::changefee(symbol sym, int newfee) {
+    check( (0 <= newfee) && (newfee < 1000), "new fee out of reasonable range");
     stats statstable( get_self(), get_self().value );
     auto token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );

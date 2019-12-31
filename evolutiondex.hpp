@@ -1,5 +1,5 @@
-// El frontend debe verificar bien quiénes son los connectors en cada caso.
-// Puede haber connectors fantasma o bien que cobren fees en la transfer 
+// El frontend o el usuario deben verificar bien quiénes son los connectors
+// en cada caso. Puede haber connectors fantasma o bien que cobren fees en la transfer 
 // y entonces no coincidan los saldos. Después no se podría hacer withdraw.
 
 #pragma once
@@ -46,6 +46,8 @@ namespace evolution {   // necesito el namespace? que hace?
             asset    max_supply;
             extended_asset    connector1;
             extended_asset    connector2;
+/*          float weight1;
+            float weight2;*/
             // se puede agregar weights
             int fee;
             name fee_contract;
@@ -58,8 +60,5 @@ namespace evolution {   // necesito el namespace? que hace?
          void add_balance( const name& owner, const extended_asset& value );
          void operate_token(name user, asset asset1, asset asset2,
            asset min_expected, bool is_exchange_operation);
-
-         int64_t fee_charged (int64_t amount, int fee);
-         int64_t tokens_out(int64_t A, int64_t E, int64_t V, int64_t E_in, int64_t V_in);
    };
 }
