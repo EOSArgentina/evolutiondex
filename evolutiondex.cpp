@@ -30,10 +30,10 @@ void evolutiondex::close( const name& user, const name& smartctr, const asset& a
 }
 
 void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
+    if (from == get_self()) return;
     check( get_first_receiver() != get_self(), "token already lives in evolutiondex"); // tal vez no es necesario
     check(quantity.amount >= 0, "quantity must be positive");
-    if (from == get_self()) return;
-    check(to == get_self(), "This transfer is not for evolutiondex"); // hace falta este check?
+    check(to == get_self(), "This transfer is not for evolutiondex");
     extended_asset incoming = extended_asset{quantity, get_first_receiver()};
     add_balance(from, incoming);
 }
@@ -42,10 +42,8 @@ void evolutiondex::withdraw(name user, name smartctr, asset to_withdraw){
     require_auth( user );
     check(to_withdraw.amount > 0, "quantity must be positive");
     add_balance(user, -extended_asset{to_withdraw, smartctr});
-    action(permission_level{ _self, "active"_n },
-        smartctr, "transfer"_n,
-        std::make_tuple( get_self(), user, to_withdraw, std::string("Withdraw"))
-        ).send(); 
+    action(permission_level{ _self, "active"_n }, smartctr, "transfer"_n,
+        std::make_tuple( get_self(), user, to_withdraw, std::string("Withdraw")) ).send(); 
 }
 
 void evolutiondex::transfer( const name& from, const name& to, const asset& quantity, const string& memo)
@@ -90,50 +88,51 @@ asset min_expected, bool is_exchange_operation){
     check ( asset1.symbol == token->connector1.quantity.symbol , "first symbol mismatch");
     check ( asset2.symbol == token->connector2.quantity.symbol , "second symbol mismatch");
 
-    extended_asset ext_asset1 = extended_asset{asset1, token->connector1.contract};
-    extended_asset ext_asset2 = extended_asset{asset2, token->connector2.contract};
-    
+    asset1 = chargefee(user, asset1, token->connector1.contract, token->fee);
+    asset2 = chargefee(user, asset2, token->connector2.contract, token->fee);
+
     auto A = token-> supply.amount;
-    auto E = token-> connector1.quantity.amount;
-    auto V = token-> connector2.quantity.amount;;
-    auto E_in = asset1.amount;
-    auto V_in = asset2.amount;
+    auto C1 = token-> connector1.quantity.amount;
+    auto C2 = token-> connector2.quantity.amount;
+    auto C1_in = asset1.amount;
+    auto C2_in = asset2.amount;
 
     int64_t tok_out = 0;
     if (is_exchange_operation) {
-        int64_t E_out = E * pow( (double)V / ((double)V + (double)V_in), HALF / HALF) - E;
-        check(E_out <= E_in, "available is less than expected");
-        ext_asset1.quantity.amount = E_out;
-        print("tokens out: ", ext_asset1, "\n");
+        int64_t C1_out = C1 * pow( (double)C2 / ((double)C2 + (double)C2_in), HALF / HALF) - C1 + 1;
+        check(C1_out <= C1_in, "available is less than expected");
+        asset1.amount = C1_out;
+        print("user obtains: ", -asset1, ", ", -asset2, "\n");
     } else {
-        tok_out = A * pow( ((double)E+(double)E_in)/(double)E, HALF ) * 
-      pow( ((double)V+(double)V_in) / (double)V, HALF ) - A; 
+        tok_out = A * pow( ((double)C1+(double)C1_in)/(double)C1, HALF ) * 
+      pow( ((double)C2+(double)C2_in) / (double)C2, HALF ) - A; 
         check(tok_out >= min_expected.amount, "available is less than expected");
         extended_asset ext_asset_add = extended_asset{asset{tok_out, min_expected.symbol}, get_self()};
-        print("tokens out: ", ext_asset_add, "\n");
         add_balance(user, ext_asset_add);
+        print("tokens out: ", ext_asset_add, "\n");
     }
 
-    double dfee((double) token->fee / 10000);  // ¿está bien usar double?
-    int64_t fee1 = (ext_asset1.quantity.amount <= 0) || (dfee == 0) ? 0 : 
-      ( ext_asset1.quantity.amount + 9999/token->fee ) * dfee;
-    int64_t fee2 = (ext_asset2.quantity.amount <= 0) || (dfee == 0) ? 0 : 
-      ( ext_asset2.quantity.amount + 9999/token->fee ) * dfee;
-    print("Fees: ", fee1, " ", fee2, "\n");
+    add_balance(user, extended_asset{-asset1, token->connector1.contract});
+    add_balance(user, extended_asset{-asset2, token->connector2.contract});
 
-    ext_asset1.quantity.amount += fee1;
-    ext_asset2.quantity.amount += fee2;
-    add_balance(user, -ext_asset1 );
-    add_balance(user, -ext_asset2 );
-
-    // modificar statstable
     statstable.modify( token, ""_n, [&]( auto& a ) {
       a.supply.amount += tok_out;
-      a.connector1 += ext_asset1;
-      a.connector2 += ext_asset2;
-      print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2 );
-      print("\nFee parameter:", a.fee);
+      a.connector1.quantity += asset1;
+      a.connector2.quantity += asset2;
+      print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
+      print("Fee parameter:", a.fee);
     });
+}
+
+asset evolutiondex::chargefee(name user, asset quantity, name smartctr, int fee){
+    double dfee((double) fee / 10000);  // ¿está bien usar double?
+    int64_t abs_fee = (quantity.amount <= 0) || (dfee == 0) ? 0 : 
+      ( quantity.amount + 9999/fee ) * dfee;
+    auto ext_fee = extended_asset{asset{abs_fee, quantity.symbol}, smartctr};
+    print("charged fee: ", ext_fee, "\n");
+    add_balance(user, -ext_fee);
+    quantity.amount -= abs_fee;
+    return(quantity);
 }
 
 void evolutiondex::exchange( name user, symbol through, asset asset1, asset asset2) {
@@ -148,45 +147,56 @@ void evolutiondex::add_balance( const name& user, const extended_asset& to_add )
     auto to = to_acnts.find( to_add.contract.value + to_add.quantity.symbol.code().raw() );
 // en eosio.token.cpp sub_balance y add_balance, notar la diferencia en las declaraciones de to y from (const, &) 
     check( to != to_acnts.end(), "Symbol not registered for this user");
-    check( to->balance.quantity.symbol == to_add.quantity.symbol, "extended_token mismatch"); // evita ataque de colision de keys. De yapa chequea la igualdad entre las 'precision'. Averiguar si ya lo chequea la suma de extended assets.
+    check( to->balance.quantity.symbol == to_add.quantity.symbol, "extended_token mismatch"); // evita ataque de colision de keys. Además chequea la igualdad entre las 'precision'.
     to_acnts.modify( to, ""_n, [&]( auto& a ) {  // puede pasar que consuma más ram?
         a.balance += to_add;
         check( a.balance.quantity.amount >= 0, "insufficient funds");
         check( a.balance.quantity.amount <= MAX, "balance cannot be larger than 10^18");
-        eosio::print("Nuevo saldo de user: ", a.balance, "\n");
+        print("Saldo de ", user,": ", a.balance, "\n");
+        if (a.balance.contract == get_self()) notify_fee_contract(user, a.balance.quantity);
     });
 }
 
 void evolutiondex::inittoken(name user, name smartctr1, asset asset1, 
-    name smartctr2, asset asset2, asset new_token, name fee_contract)
-// agregar variable de fee inicial
+    name smartctr2, asset asset2, asset new_token, int initial_fee, name fee_contract)
 { 
     require_auth( user );
     check(asset1.symbol != asset2.symbol, "connector symbols must be different");
+
+    stats statstable( get_self(), get_self().value );
+    auto token = statstable.find( new_token.symbol.code().raw() );
+    check ( token == statstable.end(), "token already exists" );
+    check( (0 <= initial_fee) && (initial_fee < 200), "initial fee out of reasonable range");
 
     extended_asset ext_asset1 = extended_asset{asset1, smartctr1};
     extended_asset ext_asset2 = extended_asset{asset2, smartctr2};
     extended_asset ext_new_token = extended_asset{new_token, get_self()};    
 
-    add_balance(user, ext_new_token);
-    add_balance(user, -ext_asset1);
-    add_balance(user, -ext_asset2);
-
-    stats statstable( get_self(), get_self().value );
-    auto token = statstable.find( new_token.symbol.code().raw() );
-    check ( token == statstable.end(), "token already exists" );
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
         a.max_supply = asset{MAX,new_token.symbol};
         a.connector1 = ext_asset1;
         a.connector2 = ext_asset2;
-        a.fee = 1;
+        a.fee = initial_fee;
         a.fee_contract = fee_contract;
     } ); 
+
+    add_balance(user, ext_new_token);
+    add_balance(user, -ext_asset1);
+    add_balance(user, -ext_asset2);
+}
+
+void evolutiondex::notify_fee_contract( name user, asset new_balance) {
+    stats statstable( get_self(), get_self().value );
+    auto token = statstable.find( new_balance.symbol.code().raw() );
+    if (is_account(token->fee_contract)) { // existe is_action?
+        action(permission_level{ _self, "active"_n }, token->fee_contract, "newbalance"_n,
+            std::make_tuple(user, new_balance)).send();
+    }
 }
 
 void evolutiondex::changefee(symbol sym, int newfee) {
-    check( (0 <= newfee) && (newfee < 1000), "new fee out of reasonable range");
+    check( (0 <= newfee) && (newfee < 200), "new fee out of reasonable range");
     stats statstable( get_self(), get_self().value );
     auto token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );

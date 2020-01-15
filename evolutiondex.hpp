@@ -21,7 +21,7 @@ namespace evolution {   // necesito el namespace? que hace?
          const double HALF = 0.5;
 
          using contract::contract;
-         [[eosio::action]] void inittoken(name user, name smartctr1, asset asset1, name smartctr2, asset asset2, asset new_token, name fee_contract);
+         [[eosio::action]] void inittoken(name user, name smartctr1, asset asset1, name smartctr2, asset asset2, asset new_token, int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
          [[eosio::action]] void open( const name& user, const name& payer, const name& contract, const asset& asset_to_open );
          [[eosio::action]] void close ( const name& user, const name& smartctr, const asset& asset_to_open );
@@ -33,12 +33,12 @@ namespace evolution {   // necesito el namespace? que hace?
          [[eosio::action]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
 
-
       private:
 
          struct [[eosio::table]] evodexaccount {
             extended_asset   balance;
             uint64_t primary_key()const { return balance.contract.value + balance.quantity.symbol.code().raw(); }
+            // elegir una operación que tenga ínfimas chances de colapso
          };
 
          struct [[eosio::table]] currency_stats {
@@ -48,7 +48,6 @@ namespace evolution {   // necesito el namespace? que hace?
             extended_asset    connector2;
 /*          float weight1;
             float weight2;*/
-            // se puede agregar weights
             int fee;
             name fee_contract;
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
@@ -60,5 +59,7 @@ namespace evolution {   // necesito el namespace? que hace?
          void add_balance( const name& owner, const extended_asset& value );
          void operate_token(name user, asset asset1, asset asset2,
            asset min_expected, bool is_exchange_operation);
+         asset chargefee(name user, asset quantity, name smartctr, int fee);
+         void notify_fee_contract( name user, asset new_balance);
    };
 }
