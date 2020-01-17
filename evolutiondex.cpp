@@ -2,29 +2,26 @@
 
 using namespace evolution;
 
-void evolutiondex::open( const name& user, const name& payer, const name& smartctr, const asset& asset_to_open)
+void evolutiondex::open( const name& user, const name& payer, const name& smartctr, const symbol& sym)
 {
     check( is_account( user ), "user account does not exist" );
     require_auth( user );
-    check( asset_to_open.amount == 0, "initial balance must be zero");
 
     evodexacnts acnts( get_self(), user.value );
-    auto acnt_balance = acnts.find( smartctr.value + asset_to_open.symbol.code().raw() );
+    auto acnt_balance = acnts.find( smartctr.value + sym.code().raw() );
 
-    if( acnt_balance == acnts.end() ) {
-      acnts.emplace( payer, [&]( auto& a ){
-          a.balance = extended_asset{asset{0, asset_to_open.symbol}, smartctr};
-      });
-    }
+    check( acnt_balance == acnts.end(), "User already has this account" );
+    acnts.emplace( payer, [&]( auto& a ){
+        a.balance = extended_asset{asset{0, sym}, smartctr};
+    });
 }  
 
-void evolutiondex::close( const name& user, const name& smartctr, const asset& asset_to_close ) {
+void evolutiondex::close( const name& user, const name& smartctr, const symbol& sym ) {
    require_auth( user );
    evodexacnts acnts( get_self(), user.value );
    
-   auto acnt_balance = acnts.find( smartctr.value + asset_to_close.symbol.code().raw() );
+   auto acnt_balance = acnts.find( smartctr.value + sym.code().raw() );
    check( acnt_balance != acnts.end(), "User does not have such token" );
-
    check( acnt_balance->balance.quantity.amount == 0, "Cannot close because the balance is not zero." );
    acnts.erase( acnt_balance );
 }
@@ -76,7 +73,7 @@ void evolutiondex::buytoken(name user, asset asset1, asset asset2, asset min_exp
     require_auth(user);
     check(asset1.amount >= 0, "quantity must be positive");
     check(asset2.amount >= 0, "quantity must be positive");
-    check(min_expected.amount > 0, "quantity must be positive");
+    check(min_expected.amount >= 0, "quantity must be positive");
     operate_token(user, asset1, asset2, min_expected, false);
 }
 
@@ -185,6 +182,8 @@ void evolutiondex::inittoken(name user, name smartctr1, asset asset1,
     add_balance(user, -ext_asset1);
     add_balance(user, -ext_asset2);
 }
+
+// evolutiondex::closetoken?
 
 void evolutiondex::notify_fee_contract( name user, asset new_balance) {
     stats statstable( get_self(), get_self().value );

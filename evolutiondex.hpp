@@ -23,8 +23,8 @@ namespace evolution {   // necesito el namespace? que hace?
          using contract::contract;
          [[eosio::action]] void inittoken(name user, name smartctr1, asset asset1, name smartctr2, asset asset2, asset new_token, int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
-         [[eosio::action]] void open( const name& user, const name& payer, const name& contract, const asset& asset_to_open );
-         [[eosio::action]] void close ( const name& user, const name& smartctr, const asset& asset_to_open );
+         [[eosio::action]] void open( const name& user, const name& payer, const name& contract, const symbol& sym);
+         [[eosio::action]] void close ( const name& user, const name& smartctr, const symbol& sym );
          [[eosio::action]] void withdraw(name account, const name smartctr, asset to_withdraw);
          [[eosio::action]] void buytoken(name user, asset asset1, asset asset2, asset min_expected);
          [[eosio::action]] void selltoken(name user, asset asset1, asset asset2, asset max_expected);
@@ -32,6 +32,7 @@ namespace evolution {   // necesito el namespace? que hace?
          [[eosio::on_notify("*::changefee")]] void changefee(symbol sym, int newfee);
          [[eosio::action]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
+         // [[eosio::action]] closetoken?
 
       private:
 
