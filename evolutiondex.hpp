@@ -17,18 +17,19 @@ namespace evolution {   // necesito el namespace? que hace?
          const double HALF = 0.5;
 
          using contract::contract;
-         [[eosio::action]] void inittoken(name user, name smartctr1, asset asset1, name smartctr2, asset asset2, symbol new_symbol, int initial_fee, name fee_contract);
+         [[eosio::action]] void inittoken(name user, extended_asset ext_asset1, 
+           extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
-         [[eosio::action]] void open( const name& user, const name& payer, const name& contract, const symbol& sym);
-         [[eosio::action]] void close ( const name& user, const name& smartctr, const symbol& sym );
-         [[eosio::action]] void withdraw(name user, const name smartctr, asset to_withdraw);
+         [[eosio::action]] void open( const name& user, const name& payer, const extended_symbol& ext_symbol);
+         [[eosio::action]] void close ( const name& user, const extended_symbol& ext_symbol );
+         [[eosio::action]] void withdraw(name user, extended_asset to_withdraw);
          [[eosio::action]] void addliquidity(name user, asset to_buy);
          [[eosio::action]] void remliquidity(name user, asset to_sell);
          [[eosio::action]] void exchange( name user, symbol through, asset asset1, asset asset2 );
          [[eosio::on_notify("*::changefee")]] void changefee(symbol sym, int newfee);
          [[eosio::action]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
-
+         
       private:
 
          struct [[eosio::table]] evodexaccount {

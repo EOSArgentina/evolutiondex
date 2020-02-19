@@ -2,26 +2,25 @@
 
 using namespace evolution;
 
-void evolutiondex::open( const name& user, const name& payer, const name& smartctr, const symbol& sym)
+void evolutiondex::open( const name& user, const name& payer, const extended_symbol& ext_symbol)
 {
     check( is_account( user ), "user account does not exist" );
     require_auth( payer );
-
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
-    auto acnt_balance = index.find( make128key(smartctr.value, sym.code().raw()) );
+    auto acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().code().raw()) );
     check( acnt_balance == index.end(), "User already has this account" );
     acnts.emplace( payer, [&]( auto& a ){
-        a.balance = extended_asset{asset{0, sym}, smartctr};
+        a.balance = extended_asset{0, ext_symbol};
         a.id = acnts.available_primary_key();
     });
 }  
 
-void evolutiondex::close( const name& user, const name& smartctr, const symbol& sym ) {
+void evolutiondex::close( const name& user, const extended_symbol& ext_symbol ) {
    require_auth( user );
    evodexacnts acnts( get_self(), user.value );   
    auto index = acnts.get_index<"extended"_n>();
-   auto acnt_balance = index.find( make128key(smartctr.value, sym.code().raw()) );
+   auto acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().code().raw()) );
    check( acnt_balance != index.end(), "User does not have such token" );
    check( acnt_balance->balance.quantity.amount == 0, "Cannot close because the balance is not zero." );
    index.erase( acnt_balance );
@@ -31,17 +30,20 @@ void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
     if (from == get_self()) return;
     check(to == get_self(), "This transfer is not for evolutiondex");
     check(quantity.amount >= 0, "quantity must be positive");
-    // si el memo dice "deposit to: ..." cambiar from para acreditar, no admitir from==get_self()
+    if ( (memo.substr(0, 12)) == "deposit to: ") { // muy rígido? ¿tolower? no es grave, withdraw y repetir.
+        from = name(memo.substr(12));
+        check(from != get_self(), "Donation not accepted");
+    }
     extended_asset incoming = extended_asset{quantity, get_first_receiver()};
     add_balance(from, incoming);
 }
 
-void evolutiondex::withdraw(name user, name smartctr, asset to_withdraw){
+void evolutiondex::withdraw(name user, extended_asset to_withdraw){
     require_auth( user );
-    check(to_withdraw.amount > 0, "quantity must be positive");
-    add_balance(user, -extended_asset{to_withdraw, smartctr});
-    action(permission_level{ _self, "active"_n }, smartctr, "transfer"_n,
-        std::make_tuple( get_self(), user, to_withdraw, std::string("Withdraw")) ).send(); 
+    check(to_withdraw.quantity.amount > 0, "quantity must be positive");
+    add_balance(user, -to_withdraw);
+    action(permission_level{ _self, "active"_n }, to_withdraw.contract, "transfer"_n,
+        std::make_tuple( get_self(), user, to_withdraw.quantity, std::string("Withdraw")) ).send(); 
 }
 
 void evolutiondex::transfer( const name& from, const name& to, const asset& quantity, const string& memo)
@@ -50,8 +52,7 @@ void evolutiondex::transfer( const name& from, const name& to, const asset& quan
     check( from != to, "cannot transfer to self" );
     require_auth( from );
     check(quantity.amount > 0, "quantity must be positive"); 
-    // comparar con chequeos en eosio.token
-
+    // falta algún chequeo? ver por ejemplo eosio.token
     require_recipient( from );
     require_recipient( to );
     check( memo.size() <= 256, "memo has more than 256 bytes" );
@@ -109,11 +110,12 @@ void evolutiondex::add_or_remove(name user, asset to_buy, bool is_buying){
       a.supply += to_buy;
       a.connector1.quantity.amount += to_pay1;
       a.connector2.quantity.amount += to_pay2;
-      check( a.supply.amount > 0, "selling the last token would destroy it" );
       check( (a.connector1.quantity.amount >= 0) && (a.connector2.quantity.amount >= 0), "overdrawn balance, bug alert"); // no debería fallar nunca, pero protege fondos en caso de bug
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
     });
+    // ¿agregar chequeo de no disminución de state_parameter? (puedo usar compute)
+    if (token-> supply.amount == 0) statstable.erase(token);
 }
 
 void evolutiondex::exchange( name user, symbol through, asset asset1, asset asset2) {
@@ -132,7 +134,7 @@ void evolutiondex::exchange( name user, symbol through, asset asset1, asset asse
     
     int64_t C2_out = compute(-C1_in, C2, C1 + C1_in, token->fee);
     check(C2_out <= C2_in, "available is less than expected");
-    asset2 = asset{C2_out, token->connector2.quantity.symbol};
+    asset2.amount = C2_out;  // asset2 = asset{C2_out, token->connector2.quantity.symbol};
     print("user obtains: ", -asset1, ", ", -asset2, "\n");
 
     add_balance(user, extended_asset{-asset1, token->connector1.contract});
@@ -141,7 +143,7 @@ void evolutiondex::exchange( name user, symbol through, asset asset1, asset asse
     statstable.modify( token, ""_n, [&]( auto& a ) {
       a.connector1.quantity += asset1;
       a.connector2.quantity += asset2;
-      check( (a.connector1.quantity.amount >= 0) && (a.connector2.quantity.amount >= 0), "overdrawn balance, bug alert"); // no debería fallar nunca, pero protege fondos en caso de bug
+      check( (a.connector1.quantity.amount > 0) && (a.connector2.quantity.amount > 0), "overdrawn balance, bug alert"); // no debería fallar nunca, pero protege fondos en caso de bug
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
     });
@@ -153,7 +155,7 @@ void evolutiondex::add_balance( const name& user, const extended_asset& to_add )
     check( to_add.quantity.is_valid(), "invalid quantity" ); // testear esto con contrato malicioso
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
-    auto acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.code().raw()) );
+    auto acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.code().raw() ) );
     check( acnt_balance != index.end(), "Symbol not registered for this user");
     check( acnt_balance->balance.quantity.symbol == to_add.quantity.symbol, "extended_token mismatch"); // evita ataque de colision de keys. Además chequea la igualdad entre las 'precision'.
     index.modify( acnt_balance, ""_n, [&]( auto& a ) {  // puede pasar que consuma más ram?
@@ -165,23 +167,20 @@ void evolutiondex::add_balance( const name& user, const extended_asset& to_add )
     });
 }
 
-void evolutiondex::inittoken(name user, name smartctr1, asset asset1, 
-    name smartctr2, asset asset2, symbol new_symbol,
-    int initial_fee, name fee_contract)
+void evolutiondex::inittoken(name user, extended_asset ext_asset1, 
+extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract)
 { 
     require_auth( user );
-    check((asset1.amount > 0) && (asset2.amount > 0), "Both assets must be positive");
-    extended_asset ext_asset1 = extended_asset{asset1, smartctr1};
-    extended_asset ext_asset2 = extended_asset{asset2, smartctr2};
-    int128_t geometric_mean = sqrt(int128_t(asset1.amount) * int128_t(asset2.amount));
+    check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
+    int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
     check(geometric_mean <= MAX, "overflow"); // no debería pasar
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
-    extended_asset ext_new_token = extended_asset{new_token, get_self()};    
+    extended_asset ext_new_token = extended_asset{new_token, get_self()};
     check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
     stats statstable( get_self(), get_self().value );
     auto token = statstable.find( new_token.symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
-    check( (0 <= initial_fee) && (initial_fee < 500), "initial fee out of reasonable range");
+    check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
 
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
@@ -203,7 +202,7 @@ void evolutiondex::notify_fee_contract( name user, asset new_balance) {
     if (is_account(token->fee_contract)) { // existe is_action?
         action(permission_level{ _self, "active"_n }, token->fee_contract, "newbalance"_n,
             std::make_tuple(user, new_balance)).send(); 
-            // si existe cuenta y contrato pero no la acción tira assert, parece.
+        // si existe cuenta y contrato pero no la acción "newbalance", tira assert, parece.
     }
 }
 
