@@ -12,7 +12,7 @@ def compute(x, y, z, fee):
     else:
         tmp_fee =  (-tmp * fee + 9999) // 10000
     tmp += tmp_fee
-    print("fee is: ",tmp_fee / 10000, "\n")
+    print("fee is: ",tmp_fee)
     if ( (tmp >= max_amount) or (tmp <= -max_amount) ):
         print("overflow")
     return tmp
@@ -61,6 +61,9 @@ class Evodex:
 #    def state_parameter(self):
 #        return pow(self.e_bal, 0.5) * pow(self.vo_bal, 0.5) // self.evo_minted
 
+    def changefee(self, newfee):
+        self.fee = newfee
+
     def buytoken(self, user, amount):
         if (amount < 0):
             print("input must be positive")
@@ -85,6 +88,7 @@ class Evodex:
         user.add_e_balance(-to_pay_e)
         user.add_vo_balance(-to_pay_vo)
         user.add_evo_balance(amount)
+        print(user.name, "delta: ", -to_pay_e, -to_pay_vo, amount)
         self.e_bal += to_pay_e
         self.vo_bal += to_pay_vo
         self.evo_minted += amount
@@ -97,8 +101,10 @@ class Evodex:
         if (vo_out > vo):
             print("available is less than expected")
             return
+        print(user.name, "delta: ", -e, -vo_out, 0)
         user.add_e_balance(-e)
         user.add_vo_balance(-vo_out)
+
         self.e_bal += e
         self.vo_bal += vo_out
         print('vo_out:', vo_out)
@@ -139,5 +145,11 @@ evodex.state()
 
 print('5')
 evodex.exchange(alice, 1, -1)
+alice.state()
+evodex.state()
+
+evodex.changefee(50)
+print('6')
+evodex.buytoken(alice, 500000)
 alice.state()
 evodex.state()
