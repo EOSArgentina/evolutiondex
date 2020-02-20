@@ -29,8 +29,8 @@ public:
         N(wesetyourfee) } );
       produce_blocks( 2 );
 
-      set_code( N(eosio.token), contracts::eosio_token_wasm() );
-      set_abi( N(eosio.token), contracts::eosio_token_abi().data() );
+      set_code( N(eosio.token), contracts::token_wasm() );
+      set_abi( N(eosio.token), contracts::token_abi().data() );
 
       set_code( N(evolutiondex), contracts::evolutiondex_wasm() );
       set_abi( N(evolutiondex), contracts::evolutiondex_abi().data() );
@@ -217,7 +217,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
       ("balance", extended_asset{asset{100000000000, symbol::from_string("4,EVO")}, N(evolutiondex)})
       ("id", 2);
    BOOST_REQUIRE_EQUAL( fc::json::to_string(alice_evo_balance, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ), 
-fc::json::to_string(bal, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ) );
+   fc::json::to_string(bal, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ) );
 
    alice_balance(0);
 
