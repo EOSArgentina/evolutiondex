@@ -1,7 +1,16 @@
+.gitignore
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/settings.json
 *.wasm
 *.abi
 tests/build/**
-
+unlock
+send
+acciones
+notas
+wesetyourfee/send
+wesetyourfee/acciones
+wesetyourfee/unlock
+wesetyourfee/wesetyourfee.abi
+wesetyourfee/wesetyourfee.wasm

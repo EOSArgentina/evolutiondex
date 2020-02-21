@@ -1,0 +1,5 @@
+/home/sergio/Dropbox/eos/contracts/evo/tests/CMakeFiles/rebuild_cache.dir
+/home/sergio/Dropbox/eos/contracts/evo/tests/CMakeFiles/edit_cache.dir
+/home/sergio/Dropbox/eos/contracts/evo/tests/CMakeFiles/intrinsics_gen.dir
+/home/sergio/Dropbox/eos/contracts/evo/tests/CMakeFiles/test.dir
+/home/sergio/Dropbox/eos/contracts/evo/tests/CMakeFiles/unit_test.dir
