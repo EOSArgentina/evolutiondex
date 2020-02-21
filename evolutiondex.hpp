@@ -20,12 +20,12 @@ namespace evolution {   // necesito el namespace? que hace?
          [[eosio::action]] void inittoken(name user, extended_asset ext_asset1, 
            extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
-         [[eosio::action]] void open( const name& user, const name& payer, const extended_symbol& ext_symbol);
-         [[eosio::action]] void close ( const name& user, const extended_symbol& ext_symbol );
+         [[eosio::action]] void open( const name& user, const name& payer, const extended_symbol& ext_symbol, bool is_evotoken);
+         [[eosio::action]] void close ( const name& user, const extended_symbol& ext_symbol);
          [[eosio::action]] void withdraw(name user, extended_asset to_withdraw);
-         [[eosio::action]] void addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
-         [[eosio::action]] void remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2);
-         [[eosio::action]] void exchange( name user, symbol through, asset asset1, asset asset2 );
+         [[eosio::action]] void addliquidity(name user, extended_asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
+         [[eosio::action]] void remliquidity(name user, extended_asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2);
+         [[eosio::action]] void exchange( name user, extended_symbol through, asset asset1, asset asset2 );
          [[eosio::on_notify("*::changefee")]] void changefee(symbol sym, int newfee);
          [[eosio::action]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
@@ -35,6 +35,7 @@ namespace evolution {   // necesito el namespace? que hace?
 
          struct [[eosio::table]] evodexaccount {
             extended_asset   balance;
+            bool is_evotoken;
             uint64_t id;            
             uint64_t primary_key()const { return id; }
             uint128_t secondary_key()const { return 
@@ -58,9 +59,9 @@ namespace evolution {   // necesito el namespace? que hace?
            &evodexaccount::secondary_key>> > evodexacnts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
-         void add_balance( const name& owner, const extended_asset& value );
+         void add_balance( const name& owner, const extended_asset& value, bool is_evotoken );
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);
-         void add_or_remove(name user, asset to_buy, bool is_buying, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
-         void notify_fee_contract( name user, asset new_balance);
+         void add_or_remove(name user, extended_asset to_buy, bool is_buying, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
+         void notify_fee_contract( name user, extended_asset new_balance);
    };
 }

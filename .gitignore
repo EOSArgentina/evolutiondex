@@ -5,6 +5,8 @@
 *.wasm
 *.abi
 tests/build/**
+tests/run
+tests/unit_test
 unlock
 send
 acciones
