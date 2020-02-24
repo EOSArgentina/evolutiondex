@@ -17,8 +17,8 @@ namespace evolution {   // necesito el namespace? que hace?
          const double HALF = 0.5;
 
          using contract::contract;
-         [[eosio::action]] void inittoken(name user, extended_asset ext_asset1, 
-           extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract);
+         [[eosio::action]] void inittoken(extended_symbol new_ext_sym, extended_asset ext_asset1, 
+           extended_asset ext_asset2, int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
          [[eosio::action]] void open( const name& user, const name& payer, const extended_symbol& ext_symbol, bool is_evotoken);
          [[eosio::action]] void close ( const name& user, const extended_symbol& ext_symbol);

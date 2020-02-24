@@ -177,15 +177,14 @@ void evolutiondex::add_balance( const name& user, const extended_asset& to_add,
     });
 }
 
-void evolutiondex::inittoken(name user, extended_asset ext_asset1, 
-extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract) // poner new_symbol al lado de user
-{ 
+void evolutiondex::inittoken(extended_symbol new_ext_sym, extended_asset ext_asset1, 
+extended_asset ext_asset2, int initial_fee, name fee_contract){ // poner new_symbol al lado de user
+    auto user = new_ext_sym.get_contract();
     require_auth( user );
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
     int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
     // testear a full la sqrt, valores máximos.
-    auto new_token = asset{int64_t(geometric_mean), new_symbol};
-    extended_asset ext_new_token = extended_asset{new_token, user};
+    auto new_token = asset{int64_t(geometric_mean), new_ext_sym.get_symbol()};
     check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
     stats statstable( get_self(), user.value );
     auto token = statstable.find( new_token.symbol.code().raw() );
@@ -201,7 +200,7 @@ extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract
         a.fee_contract = fee_contract;
     } ); 
 
-    add_balance(user, ext_new_token, true);
+    add_balance(user, extended_asset{new_token, user}, true);
     add_balance(user, -ext_asset1, false);
     add_balance(user, -ext_asset2, false);
 }

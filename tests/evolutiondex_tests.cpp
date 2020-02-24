@@ -118,13 +118,12 @@ public:
       );
    }
 
-   action_result inittoken( name user, extended_asset ext_asset1,
-     extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract){
-      return push_action( N(evolutiondex), user, N(inittoken), mvo()
-         ( "user", user)
+   action_result inittoken( extended_symbol new_ext_sym, extended_asset ext_asset1,
+     extended_asset ext_asset2, int initial_fee, name fee_contract){
+      return push_action( N(evolutiondex), new_ext_sym.contract, N(inittoken), mvo()
+         ("new_ext_sym", new_ext_sym)
          ("ext_asset1", ext_asset1)
          ("ext_asset2", ext_asset2) 
-         ("new_symbol", new_symbol)
          ("initial_fee", initial_fee)
          ("fee_contract", fee_contract)
       );
@@ -218,10 +217,10 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
    transfer( N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
    transfer( N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
    
-   inittoken( N(alice), 
+   inittoken( EEVO,
      extended_asset{asset{10000000000, EOS}, N(eosio.token)},
      extended_asset{asset{1000000000000, VOICE}, N(eosio.token)},
-     EVO, 10, N(wesetyourfee));
+     10, N(wesetyourfee));
 
    auto alice_evo_balance = get_balance(N(evolutiondex), N(alice), N(evodexacnts), 2, "evodexaccount");
    auto bal = mvo()
