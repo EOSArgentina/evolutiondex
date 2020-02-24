@@ -1,8 +1,9 @@
 #include "evolutiondex.hpp"
+#include "token_functions.cpp"
 
 using namespace evolution;
 
-void evolutiondex::open( const name& user, const name& payer, const extended_symbol& ext_symbol) {  // hacer is_evotoken opcional con false por default
+void evolutiondex::openext( const name& user, const name& payer, const extended_symbol& ext_symbol) {
     check( is_account( user ), "user account does not exist" );
     require_auth( payer );
     evodexacnts acnts( get_self(), user.value );
@@ -15,7 +16,7 @@ void evolutiondex::open( const name& user, const name& payer, const extended_sym
     });
 }  
 
-void evolutiondex::close( const name& user, const extended_symbol& ext_symbol) {
+void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol) {
    require_auth( user );
    evodexacnts acnts( get_self(), user.value );   
    auto index = acnts.get_index<"extended"_n>();
@@ -34,43 +35,29 @@ void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
         check(from != get_self(), "Donation not accepted");
     }
     extended_asset incoming = extended_asset{quantity, get_first_receiver()};
-    add_balance(from, incoming);
+    add_signed_balance(from, incoming);
 }
 
 void evolutiondex::withdraw(name user, extended_asset to_withdraw){
     require_auth( user );
     check(to_withdraw.quantity.amount > 0, "quantity must be positive");
-    add_balance(user, -to_withdraw);
+    add_signed_balance(user, -to_withdraw);
     action(permission_level{ _self, "active"_n }, to_withdraw.contract, "transfer"_n,
       std::make_tuple( get_self(), user, to_withdraw.quantity, std::string("Withdraw")) ).send(); 
-}
-
-void evolutiondex::transfer( const name& from, const name& to, const asset& quantity, const string& memo)
-{
-    check( to != get_self(), "Donation not accepted. To sell that token use remliquidity.");
-    check( from != to, "cannot transfer to self" );
-    require_auth( from );
-    check(quantity.amount > 0, "quantity must be positive"); 
-    // falta algún chequeo? ver por ejemplo eosio.token
-    require_recipient( from );
-    require_recipient( to );
-    check( memo.size() <= 256, "memo has more than 256 bytes" );
-    add_balance( from, extended_asset{-quantity, get_self()} );
-    add_balance( to, extended_asset{quantity, get_self()} );
 }
 
 void evolutiondex::remliquidity(name user, asset to_sell, 
   extended_asset min_ext_asset1, extended_asset min_ext_asset2) {
     require_auth(user);
     check(to_sell.amount > 0, "quantity must be positive");
-    add_or_remove(user, -to_sell, false, -min_ext_asset1, -min_ext_asset2);
+    add_signed_liq(user, -to_sell, false, -min_ext_asset1, -min_ext_asset2);
 }
 
 void evolutiondex::addliquidity(name user, asset to_buy,
   extended_asset max_ext_asset1, extended_asset max_ext_asset2) {
     require_auth(user);
     check(to_buy.amount > 0, "quantity must be positive");
-    add_or_remove(user, to_buy, true, max_ext_asset1, max_ext_asset2);
+    add_signed_liq(user, to_buy, true, max_ext_asset1, max_ext_asset2);
 }
 
 int64_t evolutiondex::compute(int64_t x, int64_t y, int64_t z, int fee) {
@@ -92,9 +79,10 @@ int64_t evolutiondex::compute(int64_t x, int64_t y, int64_t z, int fee) {
     return int64_t(tmp);
 }
 
-void evolutiondex::add_or_remove(name user, asset to_buy, bool is_buying,
+void evolutiondex::add_signed_liq(name user, asset to_buy, bool is_buying,
   extended_asset max_ext_asset1, extended_asset max_ext_asset2){
-    stats statstable( get_self(), get_self().value );
+    check( to_buy.is_valid(), "invalid asset");
+    stats statstable( get_self(), to_buy.symbol.code().raw() );
     auto token = statstable.find( to_buy.symbol.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     auto A = token-> supply.amount;
@@ -109,10 +97,14 @@ void evolutiondex::add_or_remove(name user, asset to_buy, bool is_buying,
 
     check( to_pay1 <= max_ext_asset1, "available is less than expected");
     check( to_pay2 <= max_ext_asset2, "available is less than expected");
-    add_balance(user, -to_pay1);
-    add_balance(user, -to_pay2);
-    extended_asset ext_to_buy = extended_asset{to_buy, get_self()};
-    add_balance(user, ext_to_buy);
+    add_signed_balance(user, -to_pay1);
+    add_signed_balance(user, -to_pay2);
+    if (to_buy.amount > 0) {
+        add_balance(user, to_buy, user);
+    } else {
+        sub_balance(user, -to_buy);
+    }
+    require_recipient(token->fee_contract);
     statstable.modify( token, ""_n, [&]( auto& a ) {
       a.supply += to_buy;
       a.connector1 += to_pay1;
@@ -121,14 +113,13 @@ void evolutiondex::add_or_remove(name user, asset to_buy, bool is_buying,
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
     });
-    // ¿agregar chequeo de no disminución de state_parameter? (puedo usar compute)
     if (token-> supply.amount == 0) statstable.erase(token);
 }
 
 void evolutiondex::exchange( name user, symbol through, asset asset1, asset asset2) {
     check( ((asset1.amount > 0) && (asset2.amount < 0)) || 
       ((asset1.amount < 0) && (asset2.amount > 0)), "one quantity must be positive and one negative");
-    stats statstable( get_self(), get_self().value );
+    stats statstable( get_self(), through.code().raw() );
     auto token = statstable.find( through.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     check ( asset1.symbol == token->connector1.quantity.symbol , "first symbol mismatch");
@@ -144,8 +135,8 @@ void evolutiondex::exchange( name user, symbol through, asset asset1, asset asse
     asset2.amount = C2_out;
     print("user obtains: ", -asset1, ", ", -asset2, "\n");
 
-    add_balance(user, extended_asset{-asset1, token->connector1.contract});
-    add_balance(user, extended_asset{-asset2, token->connector2.contract});
+    add_signed_balance(user, extended_asset{-asset1, token->connector1.contract});
+    add_signed_balance(user, extended_asset{-asset2, token->connector2.contract});
 
     statstable.modify( token, ""_n, [&]( auto& a ) {
       a.connector1.quantity += asset1;
@@ -157,34 +148,17 @@ void evolutiondex::exchange( name user, symbol through, asset asset1, asset asse
     // ¿agregar chequeo de no disminución de state_parameter?
 }
 
-void evolutiondex::add_balance( const name& user, const extended_asset& to_add )  // cambiar nombre por add_signed_balance
-{
-    check( to_add.quantity.is_valid(), "invalid quantity" ); // testear esto depositando desde contrato malicioso
-    evodexacnts acnts( get_self(), user.value );
-    auto index = acnts.get_index<"extended"_n>();
-    auto acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.code().raw() ) );
-    check( acnt_balance != index.end(), "Symbol not registered for this user, please run open action");
-    check( acnt_balance->balance.quantity.symbol == to_add.quantity.symbol, "extended_token mismatch"); // Chequea la igualdad entre las 'precision'.
-    index.modify( acnt_balance, ""_n, [&]( auto& a ) {  // puede pasar que consuma más ram?
-        a.balance += to_add;
-        check( a.balance.quantity.amount >= 0, "insufficient funds");
-        check( a.balance.quantity.amount <= MAX, "balance cannot be larger than 2^62-1");
-        print("Saldo de ", user,": ", a.balance, "\n");
-        if (a.balance.contract == get_self()) notify_fee_contract(user, a.balance.quantity);
-    });
-}
-
 void evolutiondex::inittoken(name user, extended_asset ext_asset1, 
 extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract)
 { 
     require_auth( user );
+    // check( user == milena, "Only EOS Argentina can initialize tokens here until May 2020");
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
     int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
     // testear a full la sqrt, valores máximos.
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
-    extended_asset ext_new_token = extended_asset{new_token, get_self()};
     check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
-    stats statstable( get_self(), get_self().value );
+    stats statstable( get_self(), new_token.symbol.code().raw() );
     auto token = statstable.find( new_token.symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
     check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
@@ -198,24 +172,14 @@ extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract
         a.fee_contract = fee_contract;
     } ); 
 
-    add_balance(user, ext_new_token);
-    add_balance(user, -ext_asset1);
-    add_balance(user, -ext_asset2);
-}
-
-void evolutiondex::notify_fee_contract( name user, asset new_balance) {
-    stats statstable( get_self(), get_self().value );
-    auto token = statstable.find( new_balance.symbol.code().raw() );
-    if (is_account(token->fee_contract)) { // existe is_action?
-        action(permission_level{ _self, "active"_n }, token->fee_contract, "newbalance"_n,
-            std::make_tuple(user, new_balance)).send(); 
-        // si existe cuenta y contrato pero no la acción "newbalance", tira assert, parece.
-    }
+    add_balance(user, new_token, user);
+    add_signed_balance(user, -ext_asset1);
+    add_signed_balance(user, -ext_asset2);
 }
 
 void evolutiondex::changefee(symbol sym, int newfee) {
     check( (0 <= newfee) && (newfee < 500), "new fee out of reasonable range");
-    stats statstable( get_self(), get_self().value );
+    stats statstable( get_self(), sym.code().raw() );
     auto token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     check( get_first_receiver() == token->fee_contract, "contract not authorized to change fee." );
@@ -228,4 +192,20 @@ uint128_t evolutiondex::make128key(uint64_t a, uint64_t b) {
     uint128_t aa = a;
     uint128_t bb = b;
     return (aa << 64) + bb;
+}
+
+void evolutiondex::add_signed_balance( const name& user, const extended_asset& to_add )
+{
+    check( to_add.quantity.is_valid(), "invalid asset" ); // testear esto depositando desde contrato malicioso
+    evodexacnts acnts( get_self(), user.value );
+    auto index = acnts.get_index<"extended"_n>();
+    auto acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.code().raw() ) );
+    check( acnt_balance != index.end(), "Symbol not registered for this user, please run openext action");
+    check( acnt_balance->balance.quantity.symbol == to_add.quantity.symbol, "extended_token mismatch"); // Chequea la igualdad entre las 'precision'.
+    index.modify( acnt_balance, ""_n, [&]( auto& a ) {  // puede pasar que consuma más ram?
+        a.balance += to_add;
+        check( a.balance.quantity.amount >= 0, "insufficient funds");
+        check( a.balance.quantity.amount <= MAX, "balance cannot be larger than 2^62-1");
+        print("Saldo de ", user,": ", a.balance, "\n");
+    });
 }
