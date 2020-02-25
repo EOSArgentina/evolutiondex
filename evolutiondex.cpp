@@ -1,5 +1,4 @@
 #include "evolutiondex.hpp"
-#include "token_functions.cpp"
 
 using namespace evolution;
 
@@ -116,31 +115,31 @@ void evolutiondex::add_signed_liq(name user, asset to_buy, bool is_buying,
     if (token-> supply.amount == 0) statstable.erase(token);
 }
 
-void evolutiondex::exchange( name user, symbol through, asset asset1, asset asset2) {
-    check( ((asset1.amount > 0) && (asset2.amount < 0)) || 
-      ((asset1.amount < 0) && (asset2.amount > 0)), "one quantity must be positive and one negative");
+void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2) {
+    check( ((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount < 0)) || 
+      ((ext_asset1.quantity.amount < 0) && (ext_asset2.quantity.amount > 0)), "one quantity must be positive and one negative");
     stats statstable( get_self(), through.code().raw() );
     auto token = statstable.find( through.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
-    check ( asset1.symbol == token->connector1.quantity.symbol , "first symbol mismatch");
-    check ( asset2.symbol == token->connector2.quantity.symbol , "second symbol mismatch");
+    check ( ext_asset1.get_extended_symbol() == token->connector1.get_extended_symbol() , "first extended_symbol mismatch");
+    check ( ext_asset2.get_extended_symbol() == token->connector2.get_extended_symbol() , "second extended_symbol mismatch");
 
     auto C1 = token-> connector1.quantity.amount;
     auto C2 = token-> connector2.quantity.amount;
-    auto C1_in = asset1.amount;
-    auto C2_in = asset2.amount;
+    auto C1_in = ext_asset1.quantity.amount;
+    auto C2_in = ext_asset2.quantity.amount;
     
     int64_t C2_out = compute(-C1_in, C2, C1 + C1_in, token->fee);
     check(C2_out <= C2_in, "available is less than expected");
-    asset2.amount = C2_out;
-    print("user obtains: ", -asset1, ", ", -asset2, "\n");
+    ext_asset2.quantity.amount = C2_out;
+    print("user obtains: ", -ext_asset1, ", ", -ext_asset2, "\n");
 
-    add_signed_balance(user, extended_asset{-asset1, token->connector1.contract});
-    add_signed_balance(user, extended_asset{-asset2, token->connector2.contract});
+    add_signed_balance(user, -ext_asset1);
+    add_signed_balance(user, -ext_asset2);
 
     statstable.modify( token, ""_n, [&]( auto& a ) {
-      a.connector1.quantity += asset1;
-      a.connector2.quantity += asset2;
+      a.connector1 += ext_asset1;
+      a.connector2 += ext_asset2;
       check( (a.connector1.quantity.amount > 0) && (a.connector2.quantity.amount > 0), "overdrawn balance, bug alert"); // no debería fallar nunca, pero protege fondos en caso de bug
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
@@ -148,8 +147,8 @@ void evolutiondex::exchange( name user, symbol through, asset asset1, asset asse
     // ¿agregar chequeo de no disminución de state_parameter?
 }
 
-void evolutiondex::inittoken(name user, extended_asset ext_asset1, 
-extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract)
+void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_asset1, 
+extended_asset ext_asset2, int initial_fee, name fee_contract)
 { 
     require_auth( user );
     // check( user == milena, "Only EOS Argentina can initialize tokens here until May 2020");

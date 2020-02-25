@@ -9,29 +9,30 @@
 using namespace eosio;
 using namespace std;
 
-namespace evolution {   // necesito el namespace? que hace?
+namespace evolution {   // ok el namespace?
 
    class [[eosio::contract("evolutiondex")]] evolutiondex : public contract {
       public:
          const int64_t MAX = eosio::asset::max_amount;
-         const double HALF = 0.5;
 
          using contract::contract;
-         [[eosio::action]] void inittoken(name user, extended_asset ext_asset1, 
-           extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract);
+         [[eosio::action]] void inittoken(name user, symbol new_symbol, 
+           extended_asset ext_asset1, extended_asset ext_asset2, 
+           int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
          [[eosio::action]] void openext( const name& user, const name& payer, const extended_symbol& ext_symbol);
          [[eosio::action]] void closeext ( const name& user, const extended_symbol& ext_symbol );
          [[eosio::action]] void withdraw(name user, extended_asset to_withdraw);
          [[eosio::action]] void addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
          [[eosio::action]] void remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2);
-         [[eosio::action]] void exchange( name user, symbol through, asset asset1, asset asset2 );
+         [[eosio::action]] void exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2 );
          [[eosio::on_notify("*::changefee")]] void changefee(symbol sym, int newfee);
+
          [[eosio::action]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
          [[eosio::action]] void open( const name& owner, const symbol& symbol, const name& ram_payer );
          [[eosio::action]] void close( const name& owner, const symbol& symbol );
-         
+
          
       private:
 

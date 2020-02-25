@@ -125,13 +125,13 @@ public:
       );
    }
 
-   action_result inittoken( name user, extended_asset ext_asset1,
-     extended_asset ext_asset2, symbol new_symbol, int initial_fee, name fee_contract){
+   action_result inittoken( name user, symbol new_symbol, extended_asset ext_asset1,
+     extended_asset ext_asset2, int initial_fee, name fee_contract){
       return push_action( N(evolutiondex), user, N(inittoken), mvo()
          ( "user", user)
+         ("new_symbol", new_symbol)
          ("ext_asset1", ext_asset1)
          ("ext_asset2", ext_asset2) 
-         ("new_symbol", new_symbol)
          ("initial_fee", initial_fee)
          ("fee_contract", fee_contract)
       );
@@ -157,12 +157,12 @@ public:
       );
    }
 
-   action_result exchange( name user, symbol through, asset asset1, asset asset2 ) {
+   action_result exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2 ) {
       return push_action( N(evolutiondex), user, N(exchange), mvo()
          ( "user", user )
          ( "through", through)
-         ( "asset1", asset1 )
-         ( "asset2", asset2 )
+         ( "ext_asset1", ext_asset1 )
+         ( "ext_asset2", ext_asset2 )
       );
    }
 
@@ -174,13 +174,36 @@ public:
    }
 
 
-   void alice_balance(int i) {
+   vector <int64_t> alice_balance() {
       auto alice_eos_balance = get_balance(N(evolutiondex), N(alice), N(evodexacnts), 0, "evodexaccount" );
       auto alice_voice_balance = get_balance(N(evolutiondex), N(alice), N(evodexacnts), 1, "evodexaccount");   
       auto alice_evo_balance = get_balance(N(evolutiondex), N(alice), N(accounts), 5199429, "account" );
-      cout << i << " alice: " << alice_eos_balance;
-      cout << i << " alice: " << alice_voice_balance;
-      cout << i << " alice: " << alice_evo_balance;
+
+      auto saldo_eos = to_int(fc::json::to_string(alice_eos_balance["balance"]["quantity"], 
+        fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
+      auto saldo_voice = to_int( fc::json::to_string(alice_voice_balance["balance"]["quantity"], 
+        fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
+      auto saldo_evo = to_int( fc::json::to_string(alice_evo_balance["balance"], 
+        fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
+      vector <int64_t> ans = {saldo_eos, saldo_voice, saldo_evo};
+      return ans;
+   }
+
+   int64_t to_int(string in) {
+      auto sub = in.substr(1,in.length()-2);
+      return asset::from_string(sub).get_amount();
+   }
+
+   vector <int64_t> system_balance(){
+      auto sys_balance_json = get_balance(N(evolutiondex), name(5199429), N(stat), 5199429, "currency_stats" );   
+      auto saldo_eos = to_int(fc::json::to_string(sys_balance_json["connector1"]["quantity"], 
+        fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
+      auto saldo_voice = to_int(fc::json::to_string(sys_balance_json["connector2"]["quantity"], 
+        fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
+      auto minted_evo = to_int(fc::json::to_string(sys_balance_json["supply"], 
+        fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
+      vector <int64_t> ans = {saldo_eos, saldo_voice, minted_evo};
+      return ans;
    }
 
    abi_serializer abi_ser;
@@ -216,39 +239,46 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
    transfer( N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
    transfer( N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
    
-   inittoken( N(alice), 
+   inittoken( N(alice), EVO,
      extended_asset{asset{10000000000, EOS}, N(eosio.token)},
      extended_asset{asset{1000000000000, VOICE}, N(eosio.token)},
-     EVO, 10, N(wesetyourfee));
+     10, N(wesetyourfee));
 
    auto alice_evo_balance = get_balance(N(evolutiondex), N(alice), N(accounts), 5199429, "account");
    auto bal = mvo() ("balance", asset{100000000000, EVO});
    BOOST_REQUIRE_EQUAL( fc::json::to_string(alice_evo_balance, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ), 
    fc::json::to_string(bal, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ) );
 
-   alice_balance(0);
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
 
    addliquidity( N(alice), asset::from_string("50.0000 EVO"), extended_asset{asset{100000000000, EOS}, N(eosio.token)}, extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
 
    produce_blocks();
-   alice_balance(1);
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
 
    remliquidity( N(alice), asset::from_string("17.1872 EVO"),
      extended_asset{asset{1, EOS}, N(eosio.token)},
      extended_asset{asset{1, VOICE}, N(eosio.token)});
-   alice_balance(2);
+     
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
 
    exchange( N(alice), EVO, 
-     asset::from_string("4.0000 EOS"), asset::from_string("-10.0000 VOICE") );
-   alice_balance(3);
+     extended_asset{asset{40000, EOS}, N(eosio.token)},
+     extended_asset{asset{-100000, VOICE}, N(eosio.token)});
+
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
 
    exchange( N(alice), EVO, 
-     asset::from_string("0.1000 EOS"), asset::from_string("-4.8500 VOICE") );
-   alice_balance(4);
+     extended_asset{asset{1000, EOS}, N(eosio.token)},
+     extended_asset{asset{-48500, VOICE}, N(eosio.token)});
+
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
 
    exchange( N(alice), EVO, 
-     asset::from_string("0.0001 EOS"), asset::from_string("-0.0009 VOICE") );
-   alice_balance(5);
+     extended_asset{asset{1, EOS}, N(eosio.token)},
+     extended_asset{asset{-9, VOICE}, N(eosio.token)});
+
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
    // mirar stats de evo, chequear que state_parameter siempre suba.
 
    abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
@@ -259,12 +289,15 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
      extended_asset{asset{100000000000, EOS}, N(eosio.token)},
      extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
 
-   alice_balance(6);
+   cout << alice_balance().at(0) << " " << alice_balance().at(1) << " " << alice_balance().at(2) << endl;
 
-   abi_ser.set_abi(abi_fee, abi_serializer_max_time);
-   changefee( EVO, 20 );
+//   abi_ser.set_abi(abi_fee, abi_serializer_max_time);
+//   changefee( EVO, 20 );
+
+   cout << system_balance().at(0) << " " << system_balance().at(1) << " " << system_balance().at(2) << endl;
 
 } FC_LOG_AND_RETHROW()
+
 
 
 BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
@@ -291,8 +324,8 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
    BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(evolutiondex),
      asset::from_string("20000.0000 VOICE"), "") );
 
-   inittoken( N(alice), extended_asset{asset{1, EOS}, N(eosio.token)},
-     extended_asset{asset{1000, VOICE}, N(eosio.token)}, EVO, 10, N(wesetyourfee));
+   inittoken( N(alice), EVO, extended_asset{asset{1, EOS}, N(eosio.token)},
+     extended_asset{asset{1000, VOICE}, N(eosio.token)}, 10, N(wesetyourfee));
 
    BOOST_REQUIRE_EQUAL( success(), open( N(alice), EVO, N(alice)) );
    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Cannot close because the balance is not zero."), closeext( N(alice), 
@@ -305,7 +338,11 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
      extended_asset{asset{1, EOS}, N(eosio.token)}) );
    BOOST_REQUIRE_EQUAL( success(), closeext( N(alice),
      extended_symbol{EOS, N(eosio.token)}) );
+   // testear close, transfer
 
 } FC_LOG_AND_RETHROW()
+
+// testear operaciones con más de un token, chequear que los productos 
+// de los conectores van aumentando.
 
 BOOST_AUTO_TEST_SUITE_END()

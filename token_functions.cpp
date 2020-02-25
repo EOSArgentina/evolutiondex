@@ -1,3 +1,5 @@
+#include "evolutiondex.hpp"
+
 using namespace evolution;
 
 void evolutiondex::transfer( const name& from, const name& to, const asset& quantity,
