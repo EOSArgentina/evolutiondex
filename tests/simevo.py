@@ -116,6 +116,7 @@ class Evodex:
         print("Characteristic number:", self.state_parameter, "\n") # pow(self.e_bal, self.e_weight) * pow(self.vo_bal, self.vo_weight) / self.evo_minted, "\n" )
 
 
+'''
 alice = User('alice', 100000000000, 2000000000000)
 alice.state()
 
@@ -129,7 +130,7 @@ alice.state()
 evodex.state()
 
 print('2')
-evodex.selltoken(alice, 171872)   # Alice puede recuperar un poco de la fee que pagó
+evodex.selltoken(alice, 171872)
 alice.state()
 evodex.state()
 
@@ -153,3 +154,7 @@ print('6')
 evodex.buytoken(alice, 500000)
 alice.state()
 evodex.state()
+
+print('Max amount', max_amount)
+print('Max amount / 2', 2 ** 61 - 1)
+'''

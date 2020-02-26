@@ -14,6 +14,7 @@ namespace evolution {   // ok el namespace?
    class [[eosio::contract("evolutiondex")]] evolutiondex : public contract {
       public:
          const int64_t MAX = eosio::asset::max_amount;
+         const int64_t INIT_MAX = 1000000000000000;  // 10^15 
 
          using contract::contract;
          [[eosio::action]] void inittoken(name user, symbol new_symbol, 
@@ -32,7 +33,6 @@ namespace evolution {   // ok el namespace?
            const asset& quantity, const string&  memo );
          [[eosio::action]] void open( const name& owner, const symbol& symbol, const name& ram_payer );
          [[eosio::action]] void close( const name& owner, const symbol& symbol );
-
          
       private:
 

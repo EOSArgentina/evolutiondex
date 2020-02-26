@@ -144,7 +144,6 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
     });
-    // ¿agregar chequeo de no disminución de state_parameter?
 }
 
 void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_asset1, 
@@ -153,8 +152,9 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     require_auth( user );
     // check( user == milena, "Only EOS Argentina can initialize tokens here until May 2020");
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
+    check((ext_asset1.quantity.amount < INIT_MAX) && (ext_asset2.quantity.amount < INIT_MAX), "Initial balances must be less than 10^15");
     int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
-    // testear a full la sqrt, valores máximos.
+    // inicializar con valores acotados.
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
     check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
     stats statstable( get_self(), new_token.symbol.code().raw() );
@@ -177,7 +177,7 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
 }
 
 void evolutiondex::changefee(symbol sym, int newfee) {
-    check( (0 <= newfee) && (newfee < 500), "new fee out of reasonable range");
+    check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), sym.code().raw() );
     auto token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
