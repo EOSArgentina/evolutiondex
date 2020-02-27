@@ -29,7 +29,7 @@ void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
     if (from == get_self()) return;
     check(to == get_self(), "This transfer is not for evolutiondex");
     check(quantity.amount >= 0, "quantity must be positive");
-    if ( (memo.substr(0, 12)) == "deposit to: ") { // muy rígido? ¿tolower? no es grave, withdraw y repetir.
+    if ( (memo.substr(0, 12)) == "deposit to: ") {
         from = name(memo.substr(12));
         check(from != get_self(), "Donation not accepted");
     }
@@ -154,7 +154,6 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
     check((ext_asset1.quantity.amount < INIT_MAX) && (ext_asset2.quantity.amount < INIT_MAX), "Initial balances must be less than 10^15");
     int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
-    // inicializar con valores acotados.
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
     check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
     stats statstable( get_self(), new_token.symbol.code().raw() );
@@ -195,7 +194,7 @@ uint128_t evolutiondex::make128key(uint64_t a, uint64_t b) {
 
 void evolutiondex::add_signed_balance( const name& user, const extended_asset& to_add )
 {
-    check( to_add.quantity.is_valid(), "invalid asset" ); // testear esto depositando desde contrato malicioso
+    check( to_add.quantity.is_valid(), "invalid asset" );
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
     auto acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.code().raw() ) );
