@@ -182,7 +182,6 @@ public:
         fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
    }
 
-// 293455877189
    int64_t tok_balance(name user, int64_t id){
       auto _balance = get_balance(N(evolutiondex), user, N(accounts), id, "account" );
       return to_int(fc::json::to_string(_balance["balance"], 
@@ -478,8 +477,12 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex),
       asset::from_string("20000.0000 VOICE"), "") );
 
-    inittoken( N(alice), EVO, extended_asset{asset{1, EOS}, N(eosio.token)},
-      extended_asset{asset{1000, VOICE}, N(eosio.token)}, 10, N(another));
+    // INITTOKEN
+    BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), EVO, extended_asset{asset{1, EOS}, N(eosio.token)},
+      extended_asset{asset{1000, VOICE}, N(eosio.token)}, 10, N(another)) );
+    // Agregar chequeos
+
+    // si quiero hacer exchange excediendo los conectores salta "invalid parameters" (compute)
 
     // CLOSEEXT
     BOOST_REQUIRE_EQUAL( success(), open( N(alice), EVO, N(alice)) );
@@ -495,7 +498,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
       extended_asset{asset{1, EOS}, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( success(), closeext( N(alice),
       extended_symbol{EOS, N(eosio.token)}) );
-    // testear todos los checks, close, transfer
+    // testear todos los checks. Las funciones de token acaso no hace falta testearlas.
 
     abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("contract not authorized to change fee."), 
