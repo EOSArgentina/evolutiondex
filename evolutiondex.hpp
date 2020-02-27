@@ -46,7 +46,7 @@ namespace evolution {   // ok el namespace?
             uint64_t id;            
             uint64_t primary_key()const { return id; }
             uint128_t secondary_key()const { return 
-              make128key(balance.contract.value, balance.quantity.symbol.code().raw() ); }
+              make128key(balance.contract.value, balance.quantity.symbol.raw() ); }
          };
 
          static uint128_t make128key(uint64_t a, uint64_t b);

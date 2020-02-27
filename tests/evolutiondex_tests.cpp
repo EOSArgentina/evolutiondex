@@ -10,7 +10,6 @@
 #include <contracts.hpp>
 #include <cmath>
 
-
 using namespace eosio::testing;
 using namespace eosio;
 using namespace eosio::chain;
@@ -87,11 +86,11 @@ public:
       );
    }
 
-   action_result transfer( account_name from,
+   action_result transfer( name contract, account_name from,
                   account_name to,
                   asset        quantity,
                   string       memo ) {
-      return push_action( N(eosio.token), from, N(transfer), mvo()
+      return push_action( contract, from, N(transfer), mvo()
            ( "from", from)
            ( "to", to)
            ( "quantity", quantity)
@@ -177,7 +176,6 @@ public:
       );
    }
 
-
    int64_t balance(name user, int64_t id) {
       auto _balance = get_balance(N(evolutiondex), user, N(evodexacnts), id, "evodexaccount" );
       return to_int(fc::json::to_string(_balance["balance"]["quantity"], 
@@ -249,7 +247,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
     create( N(bob), asset::from_string("1000000000000.0000 VOICE") );
     issue( N(alice), N(alice), asset::from_string("100000000.0000 EOS"), "some memo");
     issue( N(bob), N(bob), asset::from_string("1000000000.0000 VOICE"), "");
-    transfer( N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
@@ -258,8 +256,8 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
     openext( N(alice), N(alice), extended_symbol{VOICE, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{TUSD, N(eosio.token)});
 
-    transfer( N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
-    transfer( N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
     
     inittoken( N(alice), EVO,
       extended_asset{asset{10000000000, EOS}, N(eosio.token)},
@@ -336,11 +334,11 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     openext( N(bob), N(alice), extended_symbol{VOICE, N(eosio.token)});
     openext( N(bob), N(alice), extended_symbol{TUSD, N(eosio.token)});
 
-    transfer( N(alice), N(evolutiondex), asset{4611686018427387903, EOS}, "");
-    transfer( N(bob), N(evolutiondex), asset{4611686018427387000, VOICE}, "deposit to: alice");
-    transfer( N(bob), N(evolutiondex), asset{903, VOICE}, "this goes to Bob");
-    transfer( N(alice), N(evolutiondex), asset{4500000000000000000, TUSD}, "");
-    transfer( N(alice), N(evolutiondex), asset{30000000000000000, TUSD}, "deposit to: bob");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4611686018427387903, EOS}, "");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{4611686018427387000, VOICE}, "deposit to: alice");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{903, VOICE}, "this goes to Bob");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4500000000000000000, TUSD}, "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{30000000000000000, TUSD}, "deposit to: bob");
 
     inittoken( N(alice), EVO,
       extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
@@ -407,7 +405,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 
     cout << "Bob: " << balance(N(bob), 0) << " " << balance(N(bob), 1) << " " << balance(N(bob), 2) << endl;
-    cout << "alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
+    cout << "Alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
 
     withdraw( N(bob), extended_asset{asset{1, EOS}, N(eosio.token)});
     BOOST_REQUIRE_EQUAL(total() == new_total, false);
@@ -448,7 +446,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     create( N(bob), asset::from_string("1000000000000.0000 VOICE") );
     issue( N(alice), N(alice), asset::from_string("100000000.0000 EOS"), "some memo");
     issue( N(bob), N(bob), asset::from_string("1000000000.0000 VOICE"), "");
-    transfer( N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
@@ -458,6 +456,9 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt3.abi, abi_fee), true);
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Extended_symbol not registered for this user, please run openext action"),
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset{1000,EOS}, "") );
 
     // OPENEXT
     BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
@@ -470,9 +471,9 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
       openext( N(alice), N(alice), extended_symbol{VOICE, N(eosio.token)}) );
 
 
-    BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(evolutiondex), 
+    BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex), 
       asset::from_string("1000.0000 EOS"), "") );
-    BOOST_REQUIRE_EQUAL( success(), transfer( N(alice), N(evolutiondex),
+    BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex),
       asset::from_string("20000.0000 VOICE"), "") );
 
     inittoken( N(alice), EVO, extended_asset{asset{1, EOS}, N(eosio.token)},

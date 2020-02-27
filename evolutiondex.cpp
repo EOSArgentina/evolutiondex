@@ -7,7 +7,7 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
     require_auth( payer );
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
-    auto acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().code().raw()) );
+    const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
     check( acnt_balance == index.end(), "User already has this account" );
     acnts.emplace( payer, [&]( auto& a ){
         a.balance = extended_asset{0, ext_symbol};
@@ -19,7 +19,7 @@ void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol
    require_auth( user );
    evodexacnts acnts( get_self(), user.value );   
    auto index = acnts.get_index<"extended"_n>();
-   auto acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().code().raw()) );
+   const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
    check( acnt_balance != index.end(), "User does not have such token" );
    check( acnt_balance->balance.quantity.amount == 0, "Cannot close because the balance is not zero." );
    index.erase( acnt_balance );
@@ -41,7 +41,7 @@ void evolutiondex::withdraw(name user, extended_asset to_withdraw){
     require_auth( user );
     check(to_withdraw.quantity.amount > 0, "quantity must be positive");
     add_signed_balance(user, -to_withdraw);
-    action(permission_level{ _self, "active"_n }, to_withdraw.contract, "transfer"_n,
+    action(permission_level{ get_self(), "active"_n }, to_withdraw.contract, "transfer"_n,
       std::make_tuple( get_self(), user, to_withdraw.quantity, std::string("Withdraw")) ).send(); 
 }
 
@@ -59,6 +59,7 @@ void evolutiondex::addliquidity(name user, asset to_buy,
     add_signed_liq(user, to_buy, true, max_ext_asset1, max_ext_asset2);
 }
 
+// computes x * y / z plus the fee
 int64_t evolutiondex::compute(int64_t x, int64_t y, int64_t z, int fee) {
     check( (x != 0) && (y > 0) && (z > 0), "invalid parameters");
     int128_t prod = int128_t(x) * int128_t(y);
@@ -70,7 +71,7 @@ int64_t evolutiondex::compute(int64_t x, int64_t y, int64_t z, int fee) {
         tmp_fee = (tmp * fee + 9999) / 10000;
     } else {
         tmp = prod / int128_t(z);
-        eosio::check( (tmp >= -MAX), "computation underflow" );
+        check( (tmp >= -MAX), "computation underflow" );
         tmp_fee =  (-tmp * fee + 9999) / 10000;
     }
     tmp += tmp_fee;
@@ -82,7 +83,7 @@ void evolutiondex::add_signed_liq(name user, asset to_buy, bool is_buying,
   extended_asset max_ext_asset1, extended_asset max_ext_asset2){
     check( to_buy.is_valid(), "invalid asset");
     stats statstable( get_self(), to_buy.symbol.code().raw() );
-    auto token = statstable.find( to_buy.symbol.code().raw() );
+    const auto& token = statstable.find( to_buy.symbol.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     auto A = token-> supply.amount;
     auto C1 = token-> connector1.quantity.amount;
@@ -117,9 +118,9 @@ void evolutiondex::add_signed_liq(name user, asset to_buy, bool is_buying,
 
 void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2) {
     check( ((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount < 0)) || 
-      ((ext_asset1.quantity.amount < 0) && (ext_asset2.quantity.amount > 0)), "one quantity must be positive and one negative");
+           ((ext_asset1.quantity.amount < 0) && (ext_asset2.quantity.amount > 0)), "one quantity must be positive and one negative");
     stats statstable( get_self(), through.code().raw() );
-    auto token = statstable.find( through.code().raw() );
+    const auto& token = statstable.find( through.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     check ( ext_asset1.get_extended_symbol() == token->connector1.get_extended_symbol() , "first extended_symbol mismatch");
     check ( ext_asset2.get_extended_symbol() == token->connector2.get_extended_symbol() , "second extended_symbol mismatch");
@@ -157,7 +158,7 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
     check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
     stats statstable( get_self(), new_token.symbol.code().raw() );
-    auto token = statstable.find( new_token.symbol.code().raw() );
+    const auto& token = statstable.find( new_token.symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
     check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
 
@@ -178,7 +179,7 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
 void evolutiondex::changefee(symbol sym, int newfee) {
     check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), sym.code().raw() );
-    auto token = statstable.find( sym.code().raw() );
+    const auto& token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     check( get_first_receiver() == token->fee_contract, "contract not authorized to change fee." );
     statstable.modify( token, ""_n, [&]( auto& a ) {
@@ -197,13 +198,11 @@ void evolutiondex::add_signed_balance( const name& user, const extended_asset& t
     check( to_add.quantity.is_valid(), "invalid asset" );
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
-    auto acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.code().raw() ) );
-    check( acnt_balance != index.end(), "Symbol not registered for this user, please run openext action");
-    check( acnt_balance->balance.quantity.symbol == to_add.quantity.symbol, "extended_token mismatch"); // Chequea la igualdad entre las 'precision'.
+    const auto& acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.raw() ) );
+    check( acnt_balance != index.end(), "Extended_symbol not registered for this user, please run openext action");
     index.modify( acnt_balance, ""_n, [&]( auto& a ) {  // puede pasar que consuma más ram?
         a.balance += to_add;
         check( a.balance.quantity.amount >= 0, "insufficient funds");
-        check( a.balance.quantity.amount <= MAX, "balance cannot be larger than 2^62-1");
         print("Saldo de ", user,": ", a.balance, "\n");
     });
 }
