@@ -289,21 +289,25 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
       extended_asset{asset{1, EOS}, N(eosio.token)},
       extended_asset{asset{-9, VOICE}, N(eosio.token)});
 
+    auto new_vec = system_balance(5199429);
+    vector <int64_t> final_system_balance = {10000073864, 999999190299, 100000328128};
+    BOOST_REQUIRE_EQUAL(final_system_balance == new_vec, true);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999926136);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 1000000809701);
+
     abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
     BOOST_REQUIRE_EQUAL( success(), changefee( N(wesetyourfee), EVO, 50) );
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
-
-    auto new_vec = system_balance(5199429);
-    cout << "alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
 
     addliquidity( N(alice), asset::from_string("50.0000 EVO"),
       extended_asset{asset{100000000000, EOS}, N(eosio.token)},
       extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
 
     new_vec = system_balance(5199429);
-    cout << "alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
+    final_system_balance = {10000124116, 1000004215279, 100000828128};
+    BOOST_REQUIRE_EQUAL(final_system_balance == new_vec, true);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999875884);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 999995784721);
 
 } FC_LOG_AND_RETHROW()
 
@@ -434,8 +438,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
     cout << "alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
     cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl;
-
-
 } FC_LOG_AND_RETHROW()
 
 
@@ -499,7 +501,6 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("contract not authorized to change fee."), 
       changefee( N(wesetyourfee), EVO, 50) );
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
-
 } FC_LOG_AND_RETHROW()
 
 
