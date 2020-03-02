@@ -16,13 +16,17 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
 }  
 
 void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol) {
-   require_auth( user );
-   evodexacnts acnts( get_self(), user.value );   
-   auto index = acnts.get_index<"extended"_n>();
-   const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
-   check( acnt_balance != index.end(), "User does not have such token" );
-   check( acnt_balance->balance.quantity.amount == 0, "Cannot close because the balance is not zero." );
-   index.erase( acnt_balance );
+    require_auth( user );
+    evodexacnts acnts( get_self(), user.value );   
+    auto index = acnts.get_index<"extended"_n>();
+    const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
+    check( acnt_balance != index.end(), "User does not have such token" );
+    auto ext_balance = acnt_balance->balance;
+    if (ext_balance.quantity.amount > 0) {
+        action(permission_level{ get_self(), "active"_n }, ext_balance.contract, "transfer"_n,
+          std::make_tuple( get_self(), user, ext_balance.quantity, std::string("")) ).send(); 
+    }
+    index.erase( acnt_balance );
 }
 
 void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
