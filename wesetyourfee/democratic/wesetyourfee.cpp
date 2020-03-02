@@ -26,34 +26,24 @@ void wesetyourfee::changefee(symbol sym, int newfee_index) {
     require_recipient( "evolutiondex"_n );
 }
 
-void wesetyourfee::newbalance(name user, asset new_balance){ // se podría hacer addbalance
-    require_auth("evolutiondex"_n);
-    // print("user: ", user, ", new_balance: ", new_balance);
-
-    feeaccounts acnts( get_self(), user.value );
-    auto acnt = acnts.find( new_balance.symbol.code().raw());
-    if ( acnt == acnts.end() ) {
-        return;
-    } else {
-        auto old_amount = (acnt->balance).amount;
-        acnts.modify( acnt, user, [&]( auto& a ){
-          a.balance = new_balance;
-        });
-        addvote( (acnt->balance).symbol, acnt->fee_index_voted, new_balance.amount - old_amount);
-    }    
+void wesetyourfee::addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2){
+    add_balance(user, to_buy);
 }
+
+void wesetyourfee::remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2){
+    add_balance(user, -to_sell);
+}
+
+void wesetyourfee::transfer(const name& from, const name& to, const asset& quantity, const string&  memo ){
+    add_balance(from, -quantity);
+    add_balance(to, quantity);
+};
 
 asset wesetyourfee::bring_balance(name user, symbol sym) {
-    evodexacnts acnts( "evolutiondex"_n, user.value );
-    auto index = acnts.get_index<"extended"_n>();
-    auto acnt_balance = index.find( make128key( ("evolutiondex"_n).value, sym.code().raw() ) );
-    return (acnt_balance->balance).quantity;
-}
-
-uint128_t wesetyourfee::make128key(uint64_t a, uint64_t b) {
-    uint128_t aa = a;
-    uint128_t bb = b;
-    return (aa << 64) + bb;
+    accounts table( "evolutiondex"_n, user.value );
+    const auto& user_balance = table.find( sym.code().raw() );
+    check ( user_balance != table.end(), "token does not exist" );
+    return user_balance->balance;
 }
 
 void wesetyourfee::votefee(name user, symbol sym, int fee_index_voted){
@@ -65,7 +55,7 @@ void wesetyourfee::votefee(name user, symbol sym, int fee_index_voted){
     print("balance es: ", balance, "\n");
     if ( acnt == acnts.end() ) {
         acnts.emplace( user, [&]( auto& a ){
-          a.balance = balance;
+          a.sym = sym;
           a.fee_index_voted = fee_index_voted;
         });
     } else {
@@ -82,8 +72,9 @@ void wesetyourfee::closevote(name user, symbol sym) {
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( sym.code().raw());
     check( acnt != acnts.end(), "user is not voting" );
-    addvote( sym, acnt->fee_index_voted, -(acnt->balance.amount) );
-    acnts.erase(acnt);
+    auto balance = bring_balance(user, sym);    
+    addvote( sym, acnt->fee_index_voted, -balance.amount );
+    acnts.erase(acnt);  // tal vez tira assert si no existe, puedo ahorrar líneas
 }
 
 void wesetyourfee::openfeetable(name user, symbol sym) {
@@ -95,6 +86,16 @@ void wesetyourfee::openfeetable(name user, symbol sym) {
       a.sym = sym;  
       a.votes = zeros;
     });
+}
+
+void wesetyourfee::add_balance(name user, asset to_add) {
+    feeaccounts acnts( get_self(), user.value );
+    auto acnt = acnts.find( to_add.symbol.code().raw());
+    if ( acnt == acnts.end() ) {
+        return;
+    } else {
+        addvote( acnt->sym, acnt->fee_index_voted, to_add.amount);
+    }    
 }
 
 void wesetyourfee::addvote(symbol sym, int fee_index, int64_t amount) {
