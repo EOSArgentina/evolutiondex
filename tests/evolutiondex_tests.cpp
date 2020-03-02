@@ -520,10 +520,10 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL( success(), open( N(alice), EVO, N(alice)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("User does not have such token"), closeext( N(alice), 
       extended_symbol{TUSD, N(eosio.token)}) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Cannot close because the balance is not zero."), closeext( N(alice), 
-      extended_symbol{EOS, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg( "User already has this account" ), openext( N(alice), N(alice), 
         extended_symbol{VOICE, N(eosio.token)}) );
+    BOOST_REQUIRE_EQUAL( success(), closeext( N(alice), extended_symbol{VOICE, N(eosio.token)}) );
+    // habría que testear que le devolvió el token al cerrar.
     BOOST_REQUIRE_EQUAL( success(), withdraw( N(alice), 
       extended_asset{asset{9999999, EOS}, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), withdraw( N(alice), 

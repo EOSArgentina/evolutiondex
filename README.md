@@ -22,19 +22,35 @@ the fee contract. The fee might be controlled in the future by that smart contra
 One good choice for the fee governance is through voting of the evotoken holders.
 However, in some cases, a well known dictator might be a good choice as well.
 
-# From the perspective of liquidity providers
+On the formulas determining prices
+
+We choose to follow the usual criterion: after an exchange operation
+for a given pair, the product of the amounts in the pools of the
+corresponding pair must remain equal before the fee is charged. After
+the fee, the product will rise. All the rounding errors will favour the pools
+to avoid gaming the system. This criterion completely determines the price
+behaviour.
+
+When adding or removing liquidity, the again standard criterion is to
+keep fixed the ratios between minted evotokens and the tokens in the pools that back
+their value. Actually a correction is in order for the case of adding liquidity. 
+The fee charged will increase the value of the evotoken afterwards.
+
+Some considerations from the perspective of liquidity providers
 
 The fee governance is an important tool, since the optimal fee parameter
 is expected to change according to the mood of the market. For example, 
 high volatility suggests high fee. Another relevant factor is the competition from 
 other exchange opportunities. Without the ability to change the fee, liquidity
-providers might want to withdraw their funds from one place to the other, thus
+providers might want to move their funds from one place to the other, thus
 discouraging them to invest in the first place. Therefore a dynamic fee offers
 a practical way to benefit from the giant exchange activity in the cryptocurrency
 space. 
 
-# From the perspective of exchangers
+From the perspective of exchangers
 
 Continuous liquidity pools offer the advantages of decentralized exchange.
 There is no need to trust funds to an institution. The prices are computed
-algorithmically according to the available liquidity.
+algorithmically according to the available liquidity. High liquidity
+will translate to small spread and low price slippage (this is the 
+price variation as the exchanged amount varies).
