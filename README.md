@@ -10,7 +10,7 @@ Bancor and Uniswap, but with some design improvements that we explain below.
 
 1- Evotokens. For each registered pair there will be a standard token backed by
 the assets in the corresponding pair of pools. These new tokens can be freely
-transferred anywhere, facilitating the access and management of the investment position.
+transferred, facilitating the access and management of the investment position.
 From now on we will call these tokens "evotokens".
 
 In evolutiondex, each trading pair has an associated fee value that might be variable.
