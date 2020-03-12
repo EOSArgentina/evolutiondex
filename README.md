@@ -14,8 +14,8 @@ transferred, facilitating the access and management of the investment position.
 From now on we will call these tokens "evotokens".
 
 In evolutiondex, each trading pair has an associated fee value that might be variable.
-The value of evotokens rises as they collect fees from those exchanging through
-that pair or those adding more liquidity. The action of removing liquidity
+The value of evotokens rises as they collect fees from exchange and
+addition of liquidity operations. The action of removing liquidity
 (selling evotokens) is free of charge.
 
 2- Initial fee and fee governance. A fee value is set at initialization of each
