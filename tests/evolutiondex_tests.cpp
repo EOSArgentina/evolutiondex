@@ -295,7 +295,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL(balance(N(alice),1), 1000000809701);
 
     abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
-    //BOOST_REQUIRE_EQUAL( success(), changefee( N(wesetyourfee), EVO, 50) );
+    BOOST_REQUIRE_EQUAL( success(), updatefee( N(wesetyourfee), EVO, 50) );
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
     addliquidity( N(alice), asset::from_string("50.0000 EVO"),
@@ -520,7 +520,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL( success(), open( N(alice), EVO, N(alice)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("User does not have such token"), closeext( N(alice), 
       extended_symbol{TUSD, N(eosio.token)}) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg( "User already has this account" ), openext( N(alice), N(alice), 
+    BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
         extended_symbol{VOICE, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( success(), closeext( N(alice), extended_symbol{VOICE, N(eosio.token)}) );
     // habría que testear que le devolvió el token al cerrar.
