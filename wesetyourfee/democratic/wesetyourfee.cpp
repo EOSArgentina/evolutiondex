@@ -21,9 +21,8 @@ int wesetyourfee::median(symbol sym){
     return fee_vector.at(index);
 }
 
-void wesetyourfee::changefee(symbol sym, int newfee_index) {
-    check( newfee_index == median(sym), "fee value not allowed" );
-    require_recipient( "evolutiondex"_n );
+void wesetyourfee::updatefee(symbol sym, int newfee) {
+    if( newfee == median(sym) ) require_recipient( "evolutiondex"_n );
 }
 
 void wesetyourfee::addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2){
@@ -46,9 +45,10 @@ asset wesetyourfee::bring_balance(name user, symbol sym) {
     return user_balance->balance;
 }
 
-void wesetyourfee::votefee(name user, symbol sym, int fee_index_voted){
+void wesetyourfee::votefee(name user, symbol sym, int fee_voted){
+    int fee_index_voted = get_index(fee_voted);
     require_auth(user);
-    check( (0 <= fee_index_voted) && (fee_index_voted < 9), "index voted must be between 0 and 8");
+    // check( (0 <= fee_index_voted) && (fee_index_voted < 9), "index voted must be between 0 and 8");
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( sym.code().raw());
     auto balance = bring_balance(user, sym);
@@ -107,4 +107,12 @@ void wesetyourfee::addvote(symbol sym, int fee_index, int64_t amount) {
       print("Cantidad de votos para fee ", fee_vector.at(fee_index), " es: ", a.votes.at(fee_index), "\n");
     });
     check( (table->votes).at(fee_index) >= 0, "negative number of votes, there is a bug");
+}
+
+int wesetyourfee::get_index(int number){
+    int index;
+    for (int i = 0; (i < 9) && (fee_vector.at(i) <= number); i++){
+        index = i;
+    }
+    return index;
 }

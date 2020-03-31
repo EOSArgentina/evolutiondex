@@ -9,11 +9,11 @@ const signatureProvider = new JsSignatureProvider([defaultPrivateKey]);
 const rpc = new JsonRpc('http://127.0.0.1:8888', { fetch });
 const api = new Api({ rpc, signatureProvider, textDecoder: new TextDecoder(), textEncoder: new TextEncoder() });
 
+
 const auth = [{
     actor: 'ali',
     permission: 'active',
 }];
-
 
 (async () => {
     const result = await api.transact({

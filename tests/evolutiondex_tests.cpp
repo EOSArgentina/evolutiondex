@@ -169,8 +169,8 @@ public:
       );
    }
 
-   action_result changefee( name from_contract, symbol sym, int newfee ) {
-      return push_action( from_contract, N(alice), N(changefee), mvo()
+   action_result updatefee( name from_contract, symbol sym, int newfee ) {
+      return push_action( from_contract, N(alice), N(updatefee), mvo()
          ( "sym", sym )
          ( "newfee", newfee )
       );
@@ -500,8 +500,8 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
       extended_symbol{VOICE, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg( "user account does not exist"), 
       openext( N(cat), N(alice), extended_symbol{VOICE, N(eosio.token)}) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("User already has this account"), 
-      openext( N(alice), N(alice), extended_symbol{VOICE, N(eosio.token)}) );
+    BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
+      extended_symbol{VOICE, N(eosio.token)}) );
 
 
     BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex), 
@@ -534,7 +534,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
 
     abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("contract not authorized to change fee."), 
-      changefee( N(wesetyourfee), EVO, 50) );
+      updatefee( N(wesetyourfee), EVO, 50) );
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 } FC_LOG_AND_RETHROW()
 

@@ -8,11 +8,12 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
     const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
-    check( acnt_balance == index.end(), "User already has this account" );
-    acnts.emplace( payer, [&]( auto& a ){
-        a.balance = extended_asset{0, ext_symbol};
-        a.id = acnts.available_primary_key();
-    });
+    if( acnt_balance == index.end() ) {
+        acnts.emplace( payer, [&]( auto& a ){
+            a.balance = extended_asset{0, ext_symbol};
+            a.id = acnts.available_primary_key();
+        });
+    }
 }  
 
 void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol) {
@@ -155,7 +156,7 @@ void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_as
 extended_asset ext_asset2, int initial_fee, name fee_contract)
 { 
     require_auth( user );
-    // check( user == milena, "Only EOS Argentina can initialize tokens here until May 2020");
+//  check( user == "argentinaeos"_n, "Only EOS Argentina can initialize tokens here for the moment");
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
     check((ext_asset1.quantity.amount < INIT_MAX) && (ext_asset2.quantity.amount < INIT_MAX), "Initial balances must be less than 10^15");
     int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
@@ -180,7 +181,7 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     add_signed_balance(user, -ext_asset2);
 }
 
-void evolutiondex::changefee(symbol sym, int newfee) {
+void evolutiondex::updatefee(symbol sym, int newfee) {
     check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), sym.code().raw() );
     const auto& token = statstable.find( sym.code().raw() );
