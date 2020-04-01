@@ -49,5 +49,5 @@ the exchanged amount varies).
 Conversely, if the liquidity pools are small, there will be considerable
 slippage and the exchange will only be practical for tiny amounts.
 
-
+A list of Cleos commands for this contract can be found at /Commands.md
 **References:** Artciles from Bancor, Uniswap, and Eos Argentina (2018).
