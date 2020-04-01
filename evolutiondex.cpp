@@ -156,7 +156,6 @@ void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_as
 extended_asset ext_asset2, int initial_fee, name fee_contract)
 { 
     require_auth( user );
-//  check( user == "argentinaeos"_n, "Only EOS Argentina can initialize tokens here for the moment");
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
     check((ext_asset1.quantity.amount < INIT_MAX) && (ext_asset2.quantity.amount < INIT_MAX), "Initial balances must be less than 10^15");
     int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
