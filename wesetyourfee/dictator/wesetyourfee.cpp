@@ -1,6 +1,6 @@
 #include "wesetyourfee.hpp"
 
-
-void wesetyourfee::updatefee(symbol sym, int newfee_index) {
-    require_recipient( "evolutiondex"_n );
+void wesetyourfee::changefee(symbol sym, int newfee) {
+    action(permission_level{ get_self(), "active"_n }, "evolutiondex"_n, "changefee"_n,
+        std::make_tuple( sym, newfee)).send(); 
 }

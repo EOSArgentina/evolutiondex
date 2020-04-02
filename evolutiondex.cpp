@@ -181,12 +181,12 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     add_signed_balance(user, -ext_asset2);
 }
 
-void evolutiondex::updatefee(symbol sym, int newfee) {
+void evolutiondex::changefee(symbol sym, int newfee) {
     check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), sym.code().raw() );
     const auto& token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
-    check( get_first_receiver() == token->fee_contract, "contract not authorized to change fee." );
+    require_auth(token->fee_contract);
     statstable.modify( token, ""_n, [&]( auto& a ) {
       a.fee = newfee;
     } ); 

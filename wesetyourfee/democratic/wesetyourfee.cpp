@@ -21,8 +21,9 @@ int wesetyourfee::median(symbol sym){
     return fee_vector.at(index);
 }
 
-void wesetyourfee::updatefee(symbol sym, int newfee) {
-    if( newfee == median(sym) ) require_recipient( "evolutiondex"_n );
+void wesetyourfee::updatefee(symbol sym) {
+    action(permission_level{ get_self(), "active"_n }, "evolutiondex"_n, "changefee"_n,
+      std::make_tuple( sym, median(sym))).send(); 
 }
 
 void wesetyourfee::addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2){
@@ -48,7 +49,6 @@ asset wesetyourfee::bring_balance(name user, symbol sym) {
 void wesetyourfee::votefee(name user, symbol sym, int fee_voted){
     int fee_index_voted = get_index(fee_voted);
     require_auth(user);
-    // check( (0 <= fee_index_voted) && (fee_index_voted < 9), "index voted must be between 0 and 8");
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( sym.code().raw());
     auto balance = bring_balance(user, sym);

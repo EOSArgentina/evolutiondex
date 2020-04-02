@@ -169,8 +169,8 @@ public:
       );
    }
 
-   action_result updatefee( name from_contract, symbol sym, int newfee ) {
-      return push_action( from_contract, N(alice), N(updatefee), mvo()
+   action_result changefee( name from_contract, symbol sym, int newfee ) {
+      return push_action( from_contract, N(alice), N(changefee), mvo()
          ( "sym", sym )
          ( "newfee", newfee )
       );
@@ -295,7 +295,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL(balance(N(alice),1), 1000000809701);
 
     abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
-    BOOST_REQUIRE_EQUAL( success(), updatefee( N(wesetyourfee), EVO, 50) );
+    BOOST_REQUIRE_EQUAL( success(), changefee( N(wesetyourfee), EVO, 50) );
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
     addliquidity( N(alice), asset::from_string("50.0000 EVO"),
@@ -511,7 +511,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
 
     // INITTOKEN
     BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), EVO, extended_asset{asset{1, EOS}, N(eosio.token)},
-      extended_asset{asset{1000, VOICE}, N(eosio.token)}, 10, N(another)) );
+      extended_asset{asset{1000, VOICE}, N(eosio.token)}, 10, N(foo)) );
     // Agregar chequeos
 
     // si quiero hacer exchange excediendo los conectores salta "invalid parameters" (compute)
@@ -533,8 +533,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     // testear todos los checks. Las funciones de token acaso no hace falta testearlas.
 
     abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("contract not authorized to change fee."), 
-      updatefee( N(wesetyourfee), EVO, 50) );
+    BOOST_CHECK( "missing authority of foo" == changefee( N(wesetyourfee), EVO, 50));
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 } FC_LOG_AND_RETHROW()
 

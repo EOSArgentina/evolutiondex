@@ -17,7 +17,7 @@ class [[eosio::contract("wesetyourfee")]] wesetyourfee : public contract {
       [[eosio::action]] void votefee(name user, symbol sym, int fee_index_voted);
       [[eosio::action]] void openfeetable(name user, symbol sym);
       [[eosio::action]] void closevote(name user, symbol sym);
-      [[eosio::action]] void updatefee(symbol sym, int newfee);
+      [[eosio::action]] void updatefee(symbol sym);
       [[eosio::on_notify("evolutiondex::addliquidity")]] void addliquidity(name user, asset to_buy, 
         extended_asset max_ext_asset1, extended_asset max_ext_asset2);
       [[eosio::on_notify("evolutiondex::remliquidity")]] void remliquidity(name user, asset to_sell,

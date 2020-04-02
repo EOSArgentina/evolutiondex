@@ -14,5 +14,5 @@ class [[eosio::contract("wesetyourfee")]] wesetyourfee : public contract {
    public:
 
       using contract::contract;
-      [[eosio::action]] void updatefee(symbol sym, int newfee);
+      [[eosio::action]] void changefee(symbol sym, int newfee);
 };
