@@ -114,7 +114,7 @@ void evolutiondex::add_signed_liq(name user, asset to_buy, bool is_buying,
       a.supply += to_buy;
       a.connector1 += to_pay1;
       a.connector2 += to_pay2;
-      check( (a.connector1.quantity.amount >= 0) && (a.connector2.quantity.amount >= 0), "overdrawn balance, bug alert"); // no debería fallar nunca, pero protege fondos en caso de bug
+      check( (a.connector1.quantity.amount >= 0) && (a.connector2.quantity.amount >= 0), "overdrawn balance, bug alert"); // This may protect funds in case of a bug
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
     });
@@ -146,7 +146,7 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
     statstable.modify( token, ""_n, [&]( auto& a ) {
       a.connector1 += ext_asset1;
       a.connector2 += ext_asset2;
-      check( (a.connector1.quantity.amount > 0) && (a.connector2.quantity.amount > 0), "overdrawn balance, bug alert"); // no debería fallar nunca, pero protege fondos en caso de bug
+      check( (a.connector1.quantity.amount > 0) && (a.connector2.quantity.amount > 0), "overdrawn balance, bug alert"); // This may protect funds in case of a bug
       print("Nuevo supply es ", a.supply, ". Connector 1: ", a.connector1, ". Connector 2: ", a.connector2, "\n");
       print("Fee parameter:", a.fee);
     });
@@ -204,7 +204,7 @@ void evolutiondex::add_signed_balance( const name& user, const extended_asset& t
     auto index = acnts.get_index<"extended"_n>();
     const auto& acnt_balance = index.find( make128key(to_add.contract.value, to_add.quantity.symbol.raw() ) );
     check( acnt_balance != index.end(), "Extended_symbol not registered for this user, please run openext action");
-    index.modify( acnt_balance, ""_n, [&]( auto& a ) {  // puede pasar que consuma más ram?
+    index.modify( acnt_balance, same_payer, [&]( auto& a ) {
         a.balance += to_add;
         check( a.balance.quantity.amount >= 0, "insufficient funds");
         print("Saldo de ", user,": ", a.balance, "\n");

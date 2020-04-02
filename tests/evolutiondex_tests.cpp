@@ -303,6 +303,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
       extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
 
     new_vec = system_balance(5199429);
+    cout << "new_vec: " << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2);
     final_system_balance = {10000124116, 1000004215279, 100000828128};
     BOOST_REQUIRE_EQUAL(final_system_balance == new_vec, true);
     BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999875884);
