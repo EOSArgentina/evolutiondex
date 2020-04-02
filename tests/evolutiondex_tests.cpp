@@ -38,9 +38,6 @@ public:
       set_code( N(evolutiondex), contracts::evolutiondex_wasm() );
       set_abi( N(evolutiondex), contracts::evolutiondex_abi().data() );
 
-      set_code( N(wesetyourfee), contracts::wesetyourfee_wasm() );
-      set_abi( N(wesetyourfee), contracts::wesetyourfee_abi().data() );
-
       produce_blocks();
 
       const auto& accnt1 = control->db().get<account_object,by_name>( N(eosio.token) );
@@ -169,8 +166,8 @@ public:
       );
    }
 
-   action_result changefee( name from_contract, symbol sym, int newfee ) {
-      return push_action( from_contract, N(alice), N(changefee), mvo()
+   action_result changefee( symbol sym, int newfee ) {
+      return push_action( N(evolutiondex), N(wesetyourfee), N(changefee), mvo()
          ( "sym", sym )
          ( "newfee", newfee )
       );
@@ -208,7 +205,6 @@ public:
    bool is_increasing(vector <int64_t> v, vector <int64_t> w){
       int256 x = int256(v.at(0)) * int256(v.at(1)) * int256(w.at(2)) * int256(w.at(2));
       int256 y = int256(w.at(0)) * int256(w.at(1)) * int256(v.at(2)) * int256(v.at(2));
-      // cout << "x " << x << endl << "y " << y << endl;
       return x < y;
    }
 
@@ -238,9 +234,6 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
-    const auto& accnt3 = control->db().get<account_object,by_name>( N(wesetyourfee) );
-    abi_def abi_fee;
-    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt3.abi, abi_fee), true);
 
     create( N(alice), asset::from_string("1000000000000.0000 EOS") );
     create( N(bob), asset::from_string("1000000000000.0000 VOICE") );
@@ -294,9 +287,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
     BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999926136);
     BOOST_REQUIRE_EQUAL(balance(N(alice),1), 1000000809701);
 
-    abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
-    BOOST_REQUIRE_EQUAL( success(), changefee( N(wesetyourfee), EVO, 50) );
-    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    BOOST_REQUIRE_EQUAL( success(), changefee(EVO, 50) );
 
     addliquidity( N(alice), asset::from_string("50.0000 EVO"),
       extended_asset{asset{100000000000, EOS}, N(eosio.token)},
@@ -317,9 +308,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
-    const auto& accnt3 = control->db().get<account_object,by_name>( N(wesetyourfee) );
-    abi_def abi_fee;
-    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt3.abi, abi_fee), true);
 
     create( N(alice), asset{4611686018427387903, EOS});
     create( N(bob), asset{4611686018427387903, VOICE} );
@@ -485,10 +473,6 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
-    const auto& accnt3 = control->db().get<account_object,by_name>( N(wesetyourfee) );
-    abi_def abi_fee;
-    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt3.abi, abi_fee), true);
-
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Extended_symbol not registered for this user, please run openext action"),
@@ -531,11 +515,9 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
       extended_asset{asset{1, EOS}, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( success(), closeext( N(alice),
       extended_symbol{EOS, N(eosio.token)}) );
-    // testear todos los checks. Las funciones de token acaso no hace falta testearlas.
+    // testear todos los checks, excepto las funciones de eosio.token.
 
-    abi_ser.set_abi(abi_fee, abi_serializer_max_time); 
-    BOOST_CHECK( "missing authority of foo" == changefee( N(wesetyourfee), EVO, 50));
-    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    BOOST_CHECK( "missing authority of foo" == changefee(EVO, 50));
 } FC_LOG_AND_RETHROW()
 
 
