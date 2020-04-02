@@ -13,7 +13,7 @@ void evolutiondex::transfer( const name& from, const name& to, const asset& quan
 
     require_recipient( from );
     require_recipient( to );
-    require_recipient( st.fee_contract ); // único cambio en funciones importadas
+    require_recipient( st.fee_contract ); // only change with respect to eosio.token
 
     check( quantity.is_valid(), "invalid quantity" );
     check( quantity.amount > 0, "must transfer positive quantity" );
