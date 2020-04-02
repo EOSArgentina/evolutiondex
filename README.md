@@ -51,4 +51,4 @@ slippage and the exchange will only be practical for tiny amounts.
 
 A list of Cleos commands to interact with this contract can be found at [Commands.md](Commands.md)
 
-**References:** [Bancor](https://about.bancor.network/protocol/), [Uniswap](https://uniswap.org), and Eos Argentina (2018).
+**References:** Articles from [Bancor](https://about.bancor.network/protocol/), [Uniswap](https://uniswap.org), and [Eos Argentina](https://steemit.com/eosio/@yuhjtman/why-bancor-like-exchanges-are-expected-to-have-fees) (2018).
