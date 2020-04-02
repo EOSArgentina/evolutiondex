@@ -110,7 +110,7 @@ void evolutiondex::add_signed_liq(name user, asset to_buy, bool is_buying,
         sub_balance(user, -to_buy);
     }
     require_recipient(token->fee_contract);
-    statstable.modify( token, ""_n, [&]( auto& a ) {
+    statstable.modify( token, same_payer, [&]( auto& a ) {
       a.supply += to_buy;
       a.connector1 += to_pay1;
       a.connector2 += to_pay2;
@@ -143,7 +143,7 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
     add_signed_balance(user, -ext_asset1);
     add_signed_balance(user, -ext_asset2);
 
-    statstable.modify( token, ""_n, [&]( auto& a ) {
+    statstable.modify( token, same_payer, [&]( auto& a ) {
       a.connector1 += ext_asset1;
       a.connector2 += ext_asset2;
       check( (a.connector1.quantity.amount > 0) && (a.connector2.quantity.amount > 0), "overdrawn balance, bug alert"); // This may protect funds in case of a bug
@@ -186,7 +186,7 @@ void evolutiondex::changefee(symbol sym, int newfee) {
     const auto& token = statstable.find( sym.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     require_auth(token->fee_contract);
-    statstable.modify( token, ""_n, [&]( auto& a ) {
+    statstable.modify( token, same_payer, [&]( auto& a ) {
       a.fee = newfee;
     } ); 
 }
