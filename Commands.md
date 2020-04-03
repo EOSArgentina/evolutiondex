@@ -1,6 +1,6 @@
 **NOTE: In this example we use the PAIR EOS/PESO, which creates the evotoken EOSPESO. The EOS token is located in the eosio.token cotract and the PESO is a token created for demostrative purposes on the Kylin Testnet, located in the contract pesocontract. You would need to replace these variables depending on your trading pairs.** 
 
-Open a channel in the contract: - this channel will store your trading tokens. You need to create 1 channel for each token you plan to trade -
+Open a channel in the contract: - this channel will store your trading tokens. You need to create one channel for each token you plan to trade. The second input below is the ram payer, and the authorizer must be the ram payer. -
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
 
