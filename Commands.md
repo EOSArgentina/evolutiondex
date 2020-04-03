@@ -34,11 +34,12 @@ Check your Evotokens balance:
 
     cleos get table evolutiondex YOUR_ACCOUNT accounts
 
-Add more liquidity to a pool: - set the maximum you are willing to pay for 1.0000 Evotoken , in this case EOSPESO -
+Add more liquidity to a pool: - set the exact amount of evotoken to obtain, in this case 1.0000 EOSPESO, 
+and the maximum you are willing to pay of each token of the pair. -
 
     cleos push action evolutiondex addliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", {"contract":"pesoevotoken", "quantity":"2.0000 PESO"},{"contract":"eosio.token", "quantity":"2.0000 EOS"}]' -p YOUR_ACCOUNT
 
-Sell your Evotokens and retire liquidity:
+Sell your evotokens and retire liquidity: - the amount of evotoken is exact and the other two are minima required. -
 
     cleos push action evolutiondex remliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", {"contract":"pesoevotoken", "quantity":"0.1000 PESO"},{"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
 
