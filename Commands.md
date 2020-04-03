@@ -4,11 +4,11 @@ Open a channel in the contract: - this channel will store your trading tokens. Y
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
 
-Open Channel of second pair you wish to trade in evodex:
+Open a channel for the second token you wish to trade in evodex:
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"pesoevotoken", "sym":"4,PESO"}]' -p YOUR_ACCOUNT
 
-Close the contract's channel for an specific Token:
+Close the contract's channel for a specific token:
 
 cleos push action evolutiondex closeext '["YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
 
@@ -26,7 +26,7 @@ Withdraw funds from your opened channels:
 
     cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", {"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
 
-Open the EOS/PESO Evotoken: - add liquidity to the Pair Pool, set the fee for the trading pair and the fee beneficiary -
+Open the EOS/PESO Evotoken: - add liquidity to the Pair Pool, set the initial fee for the trading pair and the fee controller -
 
     cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"pesoevotoken", "quantity":"1 PESO"}, {"contract":"eosio.token", "quantity":"1.0000 EOS"}, 10, "YOUR_ACCOUNT"]' -p YOUR_ACCOUNT
 
@@ -42,7 +42,9 @@ Sell your Evotokens and retire liquidity:
 
     cleos push action evolutiondex remliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", {"contract":"pesoevotoken", "quantity":"0.1000 PESO"},{"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
 
-Exchange your tokens: - The negative number is the amount you want of an specific token, and the positve number is the maximum you are willing to pay -
+Exchange your tokens: - The negative input is the amount you want to obtain from the exchange while the positive
+one is what you are willing to pay. The order of the input tokens must match the order at initialization.
+The first amount will be exact, and the second will be taken as a maximum allowed by the user. -
 
     cleos push action evolutiondex exchange '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"pesoevotoken", "quantity":"-0.1000 PESO"},{"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
 
