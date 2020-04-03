@@ -10,7 +10,8 @@ Open a channel for the second token you wish to trade in evodex:
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"pesocontract", "sym":"4,PESO"}]' -p YOUR_ACCOUNT
 
-Close the contract's channel for a specific token:
+Close the contract's channel for a specific token: - it returns funds to the owner if
+necessary. -
 
 cleos push action evolutiondex closeext '["YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
 
@@ -28,7 +29,7 @@ Withdraw funds from your opened channels:
 
     cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", {"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
 
-Open the EOS/PESO evotoken: - add liquidity to the Pair Pool, set the initial fee for the trading pair and the fee controller -
+Open the EOS/PESO evotoken: - add liquidity to the pair pool, set the initial fee for the trading pair and the fee controller -
 
     cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"pesocontract", "quantity":"1 PESO"}, {"contract":"eosio.token", "quantity":"1.0000 EOS"}, 10, "FEE_CONTROLLER"]' -p YOUR_ACCOUNT
 
