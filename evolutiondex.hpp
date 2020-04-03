@@ -9,7 +9,7 @@
 using namespace eosio;
 using namespace std;
 
-namespace evolution {   // ok el namespace?
+namespace evolution {
 
    class [[eosio::contract("evolutiondex")]] evolutiondex : public contract {
       public:

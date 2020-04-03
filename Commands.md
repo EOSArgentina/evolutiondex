@@ -73,10 +73,7 @@ where the file addliquidity.json contains:
         {
             "account": "evolutiondex",
             "name": "openext",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
                 "payer": "YOUR_ACCOUNT",
@@ -85,10 +82,7 @@ where the file addliquidity.json contains:
         },{
             "account": "evolutiondex",
             "name": "openext",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
                 "payer": "YOUR_ACCOUNT",
@@ -97,10 +91,7 @@ where the file addliquidity.json contains:
         },{
             "account": "eosio.token",
             "name": "transfer",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "from": "YOUR_ACCOUNT",
                 "to": "evolutiondex",
@@ -110,10 +101,7 @@ where the file addliquidity.json contains:
         },{
             "account": "pesocontract",
             "name": "transfer",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "from": "YOUR_ACCOUNT",
                 "to": "evolutiondex",
@@ -123,10 +111,7 @@ where the file addliquidity.json contains:
         },{
             "account": "evolutiondex",
             "name": "addliquidity",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
                 "to_buy": "1.0000 EOSPESO",
@@ -136,10 +121,7 @@ where the file addliquidity.json contains:
         },{
             "account": "evolutiondex",
             "name": "closeext",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
                 "ext_symbol": {"contract":"pesocontract", "sym":"4,PESO"}           
@@ -147,10 +129,7 @@ where the file addliquidity.json contains:
         },{
             "account": "evolutiondex",
             "name": "closeext",
-            "authorization": [{
-                "actor": "YOUR_ACCOUNT",
-                "permission": "active"
-            }],
+            "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
                 "ext_symbol": {"contract":"eosio.token", "sym":"4,EOS"}       
