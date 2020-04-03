@@ -1,5 +1,4 @@
-# evolutiondex
-
+![EVODEX](evodex.png)
 
 This is a smart contract for EOSIO that allows the creation of continuous
 liquidity pools for any pair of tokens in the chain. It facilitates the decentralization of
