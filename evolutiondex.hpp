@@ -43,7 +43,7 @@ namespace evolution {
 
          struct [[eosio::table]] evodexaccount {
             extended_asset   balance;
-            uint64_t id;            
+            uint64_t id;
             uint64_t primary_key()const { return id; }
             uint128_t secondary_key()const { return 
               make128key(balance.contract.value, balance.quantity.symbol.raw() ); }
@@ -67,7 +67,7 @@ namespace evolution {
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
          typedef eosio::multi_index< "accounts"_n, account > accounts;
 
-         void add_signed_balance( const name& owner, const extended_asset& value );
+         void add_signed_ext_balance( const name& owner, const extended_asset& value );
          void add_signed_liq(name user, asset to_buy, bool is_buying, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);
          void notify_fee_contract( name user, asset new_balance);

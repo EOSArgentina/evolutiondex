@@ -22,10 +22,10 @@ using int128 = boost::multiprecision::int128_t;
 using int256 = boost::multiprecision::int256_t;
 using mvo = fc::mutable_variant_object;
 
-class eosio_token_tester : public tester {
+class evolutiondex_tester : public tester {
 public:
 
-   eosio_token_tester() {
+   evolutiondex_tester() {
       produce_blocks( 2 );
 
       create_accounts( { N(alice), N(bob), N(carol), N(eosio.token), N(evolutiondex),
@@ -205,7 +205,7 @@ public:
    bool is_increasing(vector <int64_t> v, vector <int64_t> w){
       int256 x = int256(v.at(0)) * int256(v.at(1)) * int256(w.at(2)) * int256(w.at(2));
       int256 y = int256(w.at(0)) * int256(w.at(1)) * int256(v.at(2)) * int256(v.at(2));
-      return x < y;
+      return x <= y;
    }
 
    vector <int64_t> total(){
@@ -230,7 +230,7 @@ static symbol TUSD = symbol::from_string("4,TUSD");
 
 BOOST_AUTO_TEST_SUITE(eosio_token_tests)
 
-BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
@@ -294,7 +294,6 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
       extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
 
     new_vec = system_balance(5199429);
-    cout << "new_vec: " << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2);
     final_system_balance = {10000124116, 1000004215279, 100000828128};
     BOOST_REQUIRE_EQUAL(final_system_balance == new_vec, true);
     BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999875884);
@@ -303,8 +302,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, eosio_token_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 
-BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
-    cout << endl << "increasing_parameter test begins" << endl;
+BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
@@ -342,13 +340,10 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
       extended_asset{asset{991168601842738, TUSD}, N(eosio.token)},
       10, N(wesetyourfee));
 
-    cout << "Alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-
     auto old_total = total();
     auto old_vec = system_balance(5199429);
     auto old_alice_bal_0 = balance(N(alice),0);
     auto old_alice_bal_1 = balance(N(alice),1);
-    cout << old_vec.at(0) << " " << old_vec.at(1) << " " << old_vec.at(2) << endl << endl;
 
     exchange( N(alice), EVO, 
       extended_asset{asset{40000, EOS}, N(eosio.token)},
@@ -362,9 +357,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     BOOST_REQUIRE_EQUAL(new_alice_bal_0 - old_alice_bal_0, -40000);
     BOOST_REQUIRE_EQUAL(new_alice_bal_1 - old_alice_bal_1, 166569);
 
-    cout << "Alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
-    
     old_total = total();
     old_vec = system_balance(5199429);
     old_alice_bal_0 = balance(N(alice), 0);
@@ -379,9 +371,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     BOOST_REQUIRE_EQUAL(new_alice_bal_0 - old_alice_bal_0, -2);
     BOOST_REQUIRE_EQUAL(new_alice_bal_1 - old_alice_bal_1, -4);
 
-    cout << "Alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
-    
     produce_blocks();
 
     old_total = total();
@@ -400,11 +389,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     BOOST_REQUIRE_EQUAL(new_alice_bal_0 - old_alice_bal_0, 0);
     BOOST_REQUIRE_EQUAL(new_alice_bal_1 - old_alice_bal_1, 2);
 
-    cout << "Alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
-
-    cout << "Bob: " << balance(N(bob), 0) << " " << balance(N(bob), 1) << " " << balance(N(bob), 2) << endl;
-
     old_total = total();
     old_vec = system_balance(293455877189);
     exchange( N(bob), ETUSD, 
@@ -414,9 +398,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     new_vec = system_balance(293455877189);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
-
-    cout << "Bob: " << balance(N(bob), 0) << " " << balance(N(bob), 1) << " " << balance(N(bob), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
 
     old_total = total();    
     old_vec = system_balance(5199429);
@@ -428,14 +409,8 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 
-    cout << "Bob: " << balance(N(bob), 0) << " " << balance(N(bob), 1) << " " << balance(N(bob), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
-
     withdraw( N(bob), extended_asset{asset{1, EOS}, N(eosio.token)});
     BOOST_REQUIRE_EQUAL(total() == new_total, false);
-
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl;
-    cout << "Alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
 
     old_total = total();
     old_vec = system_balance(5199429);
@@ -445,8 +420,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
-    cout << "alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl << endl;
 
     old_total = total(); 
     old_vec = system_balance(5199429);
@@ -457,12 +430,122 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, eosio_token_tester) try {
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
-    cout << "alice: " << balance(N(alice), 0) << " " << balance(N(alice), 1) << " " << balance(N(alice), 2) << endl;
-    cout << new_vec.at(0) << " " << new_vec.at(1) << " " << new_vec.at(2) << endl;
 } FC_LOG_AND_RETHROW()
 
 
-BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, eosio_token_tester ) try {
+BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) try {
+    const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
+    abi_def abi_evo;
+    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
+
+    create( N(alice), asset{4611686018427387903, EOS});
+    create( N(bob), asset{4611686018427387903, VOICE} );
+    create( N(alice), asset{4611686018427387903, TUSD});
+    issue( N(alice), N(alice), asset{4611686018427387903, EOS}, "");
+    issue( N(bob), N(bob), asset{4611686018427387903, VOICE}, "");
+    issue( N(alice), N(alice), asset{4611686018427387903, TUSD}, "");
+
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+
+    // eos and voice both live in eosio.token
+    openext( N(alice), N(alice), extended_symbol{EOS, N(eosio.token)});
+    openext( N(alice), N(alice), extended_symbol{VOICE, N(eosio.token)});
+    openext( N(alice), N(alice), extended_symbol{TUSD, N(eosio.token)});
+    openext( N(bob), N(alice), extended_symbol{EOS, N(eosio.token)});
+    openext( N(bob), N(alice), extended_symbol{VOICE, N(eosio.token)});
+    openext( N(bob), N(alice), extended_symbol{TUSD, N(eosio.token)});
+
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4611686018427387903, EOS}, "");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{4611686018427387000, VOICE}, "deposit to: alice");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{903, VOICE}, "this goes to Bob");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4500000000000000000, TUSD}, "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{30000000000000000, TUSD}, "deposit to: bob");
+
+    inittoken( N(alice), EVO,
+      extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
+      extended_asset{asset{961168601842738, VOICE}, N(eosio.token)},
+      0, N(wesetyourfee));
+
+    inittoken( N(alice), ETUSD,
+      extended_asset{asset{100000000000000, EOS}, N(eosio.token)},
+      extended_asset{asset{991168601842738, TUSD}, N(eosio.token)},
+      0, N(wesetyourfee));
+
+    auto old_total = total();
+    auto old_vec = system_balance(5199429);
+
+    exchange( N(alice), EVO, 
+      extended_asset{asset{40000, EOS}, N(eosio.token)},
+      extended_asset{asset{-10000, VOICE}, N(eosio.token)});
+    auto new_total = total();
+    auto new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+    
+    old_total = total();
+    old_vec = system_balance(5199429);
+    addliquidity( N(alice), asset::from_string("0.0001 EVO"), extended_asset{asset{100000000000, EOS}, N(eosio.token)}, extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
+    new_total = total();
+    new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+    
+    produce_blocks();
+
+    old_total = total();
+    old_vec = system_balance(5199429);
+    remliquidity( N(alice), asset::from_string("0.0001 EVO"),
+      extended_asset{asset{0, EOS}, N(eosio.token)},
+      extended_asset{asset{0, VOICE}, N(eosio.token)});
+    new_total = total();
+    new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
+    old_total = total();
+    old_vec = system_balance(293455877189);
+    exchange( N(bob), ETUSD, 
+      extended_asset{asset{-40000000000000, EOS}, N(eosio.token)},
+      extended_asset{asset{3000000000000000000, TUSD}, N(eosio.token)});
+    new_total = total();
+    new_vec = system_balance(293455877189);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
+    old_total = total();    
+    old_vec = system_balance(5199429);
+    exchange( N(bob), EVO, 
+      extended_asset{asset{40000000, EOS}, N(eosio.token)},
+      extended_asset{asset{-10000, VOICE}, N(eosio.token)});
+    new_total = total();
+    new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
+    withdraw( N(bob), extended_asset{asset{1, EOS}, N(eosio.token)});
+    BOOST_REQUIRE_EQUAL(total() == new_total, false);
+
+    old_total = total();
+    old_vec = system_balance(5199429);
+    addliquidity( N(alice), asset{1500000000000000000, EVO}, 
+       extended_asset{asset{4000000000000000000, EOS}, N(eosio.token)}, extended_asset{asset{4000000000000000000, VOICE}, N(eosio.token)});
+    new_total = total();
+    new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
+    old_total = total(); 
+    old_vec = system_balance(5199429);
+    exchange( N(alice), EVO, 
+      extended_asset{asset{3875926873243173478, EOS}, N(eosio.token)},
+      extended_asset{asset{-1, VOICE}, N(eosio.token)});
+    new_total = total();
+    new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
 
     create( N(alice), asset::from_string("1000000000000.0000 EOS") );
     create( N(bob), asset::from_string("1000000000000.0000 VOICE") );

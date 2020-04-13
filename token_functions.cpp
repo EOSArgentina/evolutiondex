@@ -13,7 +13,7 @@ void evolutiondex::transfer( const name& from, const name& to, const asset& quan
 
     require_recipient( from );
     require_recipient( to );
-    require_recipient( st.fee_contract ); // only change with respect to eosio.token
+    require_recipient( st.fee_contract ); // line added to code from eosio.token
 
     check( quantity.is_valid(), "invalid quantity" );
     check( quantity.amount > 0, "must transfer positive quantity" );
@@ -24,6 +24,7 @@ void evolutiondex::transfer( const name& from, const name& to, const asset& quan
 
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
+    if (to == get_self()) deposit(from, to, quantity, memo); // line added to code from eosio.token
 }
 
 void evolutiondex::sub_balance( const name& owner, const asset& value ) {
