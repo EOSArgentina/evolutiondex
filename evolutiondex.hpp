@@ -70,7 +70,6 @@ namespace evolution {
          void add_signed_ext_balance( const name& owner, const extended_asset& value );
          void add_signed_liq(name user, asset to_buy, bool is_buying, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);
-         void notify_fee_contract( name user, asset new_balance);
 
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
          void sub_balance( const name& owner, const asset& value );
