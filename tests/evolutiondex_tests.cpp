@@ -192,9 +192,9 @@ public:
 
    vector <int64_t> system_balance(int64_t id){
       auto sys_balance_json = get_balance(N(evolutiondex), name(id), N(stat), id, "currency_stats" );   
-      auto saldo1 = to_int(fc::json::to_string(sys_balance_json["connector1"]["quantity"], 
+      auto saldo1 = to_int(fc::json::to_string(sys_balance_json["pool1"]["quantity"], 
         fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
-      auto saldo2 = to_int(fc::json::to_string(sys_balance_json["connector2"]["quantity"], 
+      auto saldo2 = to_int(fc::json::to_string(sys_balance_json["pool2"]["quantity"], 
         fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));
       auto minted = to_int(fc::json::to_string(sys_balance_json["supply"], 
         fc::time_point(fc::time_point::now() + abi_serializer_max_time) ));

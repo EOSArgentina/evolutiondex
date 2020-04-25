@@ -90,14 +90,14 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     const auto& token = statstable.find( to_add.symbol.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
     auto A = token-> supply.amount;
-    auto C1 = token-> connector1.quantity.amount;
-    auto C2 = token-> connector2.quantity.amount;
+    auto C1 = token-> pool1.quantity.amount;
+    auto C2 = token-> pool2.quantity.amount;
     
     int fee = is_buying? token->fee : 0;
     auto to_pay1 = extended_asset{ asset{compute(to_add.amount, C1, A, fee), 
-      token->connector1.quantity.symbol}, token->connector1.contract};
+      token->pool1.quantity.symbol}, token->pool1.contract};
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, C2, A, fee), 
-      token->connector2.quantity.symbol}, token->connector2.contract};
+      token->pool2.quantity.symbol}, token->pool2.contract};
 
     check( to_pay1 <= max_ext_asset1, "available is less than expected");
     check( to_pay2 <= max_ext_asset2, "available is less than expected");
@@ -108,8 +108,8 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     require_recipient(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.supply += to_add;
-      a.connector1 += to_pay1;
-      a.connector2 += to_pay2;
+      a.pool1 += to_pay1;
+      a.pool2 += to_pay2;
     });
     if (token-> supply.amount == 0) statstable.erase(token);
 }
@@ -120,11 +120,11 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
     stats statstable( get_self(), through.code().raw() );
     const auto& token = statstable.find( through.code().raw() );
     check ( token != statstable.end(), "token does not exist" );
-    check ( ext_asset1.get_extended_symbol() == token->connector1.get_extended_symbol() , "first extended_symbol mismatch");
-    check ( ext_asset2.get_extended_symbol() == token->connector2.get_extended_symbol() , "second extended_symbol mismatch");
+    check ( ext_asset1.get_extended_symbol() == token->pool1.get_extended_symbol() , "first extended_symbol mismatch");
+    check ( ext_asset2.get_extended_symbol() == token->pool2.get_extended_symbol() , "second extended_symbol mismatch");
 
-    auto C1 = token-> connector1.quantity.amount;
-    auto C2 = token-> connector2.quantity.amount;
+    auto C1 = token-> pool1.quantity.amount;
+    auto C2 = token-> pool2.quantity.amount;
     auto C1_in = ext_asset1.quantity.amount;
     auto C2_in = ext_asset2.quantity.amount;
     
@@ -136,8 +136,8 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
     add_signed_ext_balance(user, -ext_asset2);
 
     statstable.modify( token, same_payer, [&]( auto& a ) {
-      a.connector1 += ext_asset1;
-      a.connector2 += ext_asset2;
+      a.pool1 += ext_asset1;
+      a.pool2 += ext_asset2;
     });
 }
 
@@ -158,8 +158,8 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
         a.max_supply = asset{MAX,new_token.symbol};
-        a.connector1 = ext_asset1;
-        a.connector2 = ext_asset2;
+        a.pool1 = ext_asset1;
+        a.pool2 = ext_asset2;
         a.fee = initial_fee;
         a.fee_contract = fee_contract;
     } ); 

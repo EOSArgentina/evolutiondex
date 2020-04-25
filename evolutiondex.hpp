@@ -54,8 +54,8 @@ namespace evolution {
          struct [[eosio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
-            extended_asset    connector1;
-            extended_asset    connector2;
+            extended_asset    pool1;
+            extended_asset    pool2;
             int fee;
             name fee_contract;
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
