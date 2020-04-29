@@ -10,7 +10,7 @@ using namespace eosio;
 using namespace std;
 
 
-class [[eosio::contract("wesetyourfee")]] wesetyourfee : public contract {
+class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
    public:
 
       using contract::contract;

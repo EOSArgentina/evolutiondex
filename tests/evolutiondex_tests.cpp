@@ -29,7 +29,7 @@ public:
       produce_blocks( 2 );
 
       create_accounts( { N(alice), N(bob), N(carol), N(eosio.token), N(evolutiondex),
-        N(wesetyourfee) } );
+        N(wevotethefee) } );
       produce_blocks( 2 );
 
       set_code( N(eosio.token), contracts::token_wasm() );
@@ -167,7 +167,7 @@ public:
    }
 
    action_result changefee( symbol sym, int newfee ) {
-      return push_action( N(evolutiondex), N(wesetyourfee), N(changefee), mvo()
+      return push_action( N(evolutiondex), N(wevotethefee), N(changefee), mvo()
          ( "sym", sym )
          ( "newfee", newfee )
       );
@@ -254,7 +254,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
     inittoken( N(alice), EVO,
       extended_asset{asset{10000000000, EOS}, N(eosio.token)},
       extended_asset{asset{1000000000000, VOICE}, N(eosio.token)},
-      10, N(wesetyourfee));
+      10, N(wevotethefee));
 
     auto alice_evo_balance = get_balance(N(evolutiondex), N(alice), N(accounts), 5199429, "account");
     auto bal = mvo() ("balance", asset{100000000000, EVO});
@@ -333,12 +333,12 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     inittoken( N(alice), EVO,
       extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
       extended_asset{asset{961168601842738, VOICE}, N(eosio.token)},
-      10, N(wesetyourfee));
+      10, N(wevotethefee));
 
     inittoken( N(alice), ETUSD,
       extended_asset{asset{100000000000000, EOS}, N(eosio.token)},
       extended_asset{asset{991168601842738, TUSD}, N(eosio.token)},
-      10, N(wesetyourfee));
+      10, N(wevotethefee));
 
     auto old_total = total();
     auto old_vec = system_balance(5199429);
@@ -464,12 +464,12 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
     inittoken( N(alice), EVO,
       extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
       extended_asset{asset{961168601842738, VOICE}, N(eosio.token)},
-      0, N(wesetyourfee));
+      0, N(wevotethefee));
 
     inittoken( N(alice), ETUSD,
       extended_asset{asset{100000000000000, EOS}, N(eosio.token)},
       extended_asset{asset{991168601842738, TUSD}, N(eosio.token)},
-      0, N(wesetyourfee));
+      0, N(wevotethefee));
 
     auto old_total = total();
     auto old_vec = system_balance(5199429);

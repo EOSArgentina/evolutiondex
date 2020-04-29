@@ -1,8 +1,6 @@
-#include "wesetyourfee.hpp"
+#include "wevotethefee.hpp"
 
-// using namespace setfee;
-
-int wesetyourfee::median(symbol sym){
+int wevotethefee::median(symbol sym){
     feetables tables( get_self(), get_self().value );
     auto table = tables.find( sym.code().raw());
     check( table != tables.end(), "fee table nonexistent, run openfeetable" );
@@ -21,32 +19,32 @@ int wesetyourfee::median(symbol sym){
     return fee_vector.at(index);
 }
 
-void wesetyourfee::updatefee(symbol sym) {
+void wevotethefee::updatefee(symbol sym) {
     action(permission_level{ get_self(), "active"_n }, "evolutiondex"_n, "changefee"_n,
       std::make_tuple( sym, median(sym))).send(); 
 }
 
-void wesetyourfee::addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2){
+void wevotethefee::addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2){
     add_balance(user, to_buy);
 }
 
-void wesetyourfee::remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2){
+void wevotethefee::remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2){
     add_balance(user, -to_sell);
 }
 
-void wesetyourfee::transfer(const name& from, const name& to, const asset& quantity, const string&  memo ){
+void wevotethefee::transfer(const name& from, const name& to, const asset& quantity, const string&  memo ){
     add_balance(from, -quantity);
     add_balance(to, quantity);
 };
 
-asset wesetyourfee::bring_balance(name user, symbol sym) {
+asset wevotethefee::bring_balance(name user, symbol sym) {
     accounts table( "evolutiondex"_n, user.value );
     const auto& user_balance = table.find( sym.code().raw() );
     check ( user_balance != table.end(), "token does not exist" );
     return user_balance->balance;
 }
 
-void wesetyourfee::votefee(name user, symbol sym, int fee_voted){
+void wevotethefee::votefee(name user, symbol sym, int fee_voted){
     int fee_index_voted = get_index(fee_voted);
     require_auth(user);
     feeaccounts acnts( get_self(), user.value );
@@ -67,7 +65,7 @@ void wesetyourfee::votefee(name user, symbol sym, int fee_voted){
     addvote(sym, fee_index_voted, balance.amount);
 }
 
-void wesetyourfee::closevote(name user, symbol sym) {
+void wevotethefee::closevote(name user, symbol sym) {
     require_auth(user);
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( sym.code().raw());
@@ -77,7 +75,7 @@ void wesetyourfee::closevote(name user, symbol sym) {
     acnts.erase(acnt);  // tal vez tira assert si no existe, puedo ahorrar líneas
 }
 
-void wesetyourfee::openfeetable(name user, symbol sym) {
+void wevotethefee::openfeetable(name user, symbol sym) {
     feetables tables( get_self(), get_self().value );
     auto table = tables.find( sym.code().raw());
     check( table == tables.end(), "already opened" );
@@ -88,7 +86,7 @@ void wesetyourfee::openfeetable(name user, symbol sym) {
     });
 }
 
-void wesetyourfee::add_balance(name user, asset to_add) {
+void wevotethefee::add_balance(name user, asset to_add) {
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( to_add.symbol.code().raw());
     if ( acnt == acnts.end() ) {
@@ -98,7 +96,7 @@ void wesetyourfee::add_balance(name user, asset to_add) {
     }    
 }
 
-void wesetyourfee::addvote(symbol sym, int fee_index, int64_t amount) {
+void wevotethefee::addvote(symbol sym, int fee_index, int64_t amount) {
     feetables tables( get_self(), get_self().value );
     auto table = tables.find( sym.code().raw());
     check( table != tables.end(), "fee table nonexistent, run openfeetable" );
@@ -109,7 +107,7 @@ void wesetyourfee::addvote(symbol sym, int fee_index, int64_t amount) {
     check( (table->votes).at(fee_index) >= 0, "negative number of votes, there is a bug");
 }
 
-int wesetyourfee::get_index(int number){
+int wevotethefee::get_index(int number){
     int index;
     for (int i = 0; (i < 9) && (fee_vector.at(i) <= number); i++){
         index = i;
