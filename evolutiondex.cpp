@@ -14,18 +14,18 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
             a.id = acnts.available_primary_key();
         });
     }
-}  
+}
 
 void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol) {
     require_auth( user );
-    evodexacnts acnts( get_self(), user.value );   
+    evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
     const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
     check( acnt_balance != index.end(), "User does not have such token" );
     auto ext_balance = acnt_balance->balance;
     if (ext_balance.quantity.amount > 0) {
         action(permission_level{ get_self(), "active"_n }, ext_balance.contract, "transfer"_n,
-          std::make_tuple( get_self(), user, ext_balance.quantity, std::string("")) ).send(); 
+          std::make_tuple( get_self(), user, ext_balance.quantity, std::string("")) ).send();
     }
     index.erase( acnt_balance );
 }
@@ -47,10 +47,10 @@ void evolutiondex::withdraw(name user, extended_asset to_withdraw){
     check(to_withdraw.quantity.amount > 0, "quantity must be positive");
     add_signed_ext_balance(user, -to_withdraw);
     action(permission_level{ get_self(), "active"_n }, to_withdraw.contract, "transfer"_n,
-      std::make_tuple( get_self(), user, to_withdraw.quantity, std::string("Withdraw")) ).send(); 
+      std::make_tuple( get_self(), user, to_withdraw.quantity, std::string("Withdraw")) ).send();
 }
 
-void evolutiondex::remliquidity(name user, asset to_sell, 
+void evolutiondex::remliquidity(name user, asset to_sell,
   extended_asset min_ext_asset1, extended_asset min_ext_asset2) {
     require_auth(user);
     check(to_sell.amount > 0, "quantity must be positive");
@@ -92,11 +92,11 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     auto A = token-> supply.amount;
     auto C1 = token-> pool1.quantity.amount;
     auto C2 = token-> pool2.quantity.amount;
-    
+
     int fee = is_buying? token->fee : 0;
-    auto to_pay1 = extended_asset{ asset{compute(to_add.amount, C1, A, fee), 
+    auto to_pay1 = extended_asset{ asset{compute(to_add.amount, C1, A, fee),
       token->pool1.quantity.symbol}, token->pool1.contract};
-    auto to_pay2 = extended_asset{ asset{compute(to_add.amount, C2, A, fee), 
+    auto to_pay2 = extended_asset{ asset{compute(to_add.amount, C2, A, fee),
       token->pool2.quantity.symbol}, token->pool2.contract};
 
     check( to_pay1 <= max_ext_asset1, "available is less than expected");
@@ -115,7 +115,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
 }
 
 void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2) {
-    check( ((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount < 0)) || 
+    check( ((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount < 0)) ||
            ((ext_asset1.quantity.amount < 0) && (ext_asset2.quantity.amount > 0)), "one quantity must be positive and one negative");
     stats statstable( get_self(), through.code().raw() );
     const auto& token = statstable.find( through.code().raw() );
@@ -127,10 +127,10 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
     auto C2 = token-> pool2.quantity.amount;
     auto C1_in = ext_asset1.quantity.amount;
     auto C2_in = ext_asset2.quantity.amount;
-    
+
     int64_t C2_out = compute(-C1_in, C2, C1 + C1_in, token->fee);
     check(C2_out <= C2_in, "available is less than expected");
-    ext_asset2.quantity.amount = C2_out;
+    ext_asset2.quantity.amount = C2_out; // is_valid check in add_signed_ext_balance
 
     add_signed_ext_balance(user, -ext_asset1);
     add_signed_ext_balance(user, -ext_asset2);
@@ -141,9 +141,9 @@ void evolutiondex::exchange( name user, symbol through, extended_asset ext_asset
     });
 }
 
-void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_asset1, 
+void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_asset1,
 extended_asset ext_asset2, int initial_fee, name fee_contract)
-{ 
+{
     require_auth( user );
     check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
     check((ext_asset1.quantity.amount < INIT_MAX) && (ext_asset2.quantity.amount < INIT_MAX), "Initial amounts must be less than 10^15");
@@ -158,11 +158,12 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
         a.max_supply = asset{MAX,new_token.symbol};
+        a.issuer = get_self();
         a.pool1 = ext_asset1;
         a.pool2 = ext_asset2;
         a.fee = initial_fee;
         a.fee_contract = fee_contract;
-    } ); 
+    } );
 
     add_balance(user, new_token, user);
     add_signed_ext_balance(user, -ext_asset1);
@@ -177,7 +178,7 @@ void evolutiondex::changefee(symbol sym, int newfee) {
     require_auth(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.fee = newfee;
-    } ); 
+    } );
 }
 
 uint128_t evolutiondex::make128key(uint64_t a, uint64_t b) {
