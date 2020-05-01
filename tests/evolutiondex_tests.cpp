@@ -113,8 +113,9 @@ public:
 
    action_result closeext ( const name user, const extended_symbol ext_symbol ){ 
       return push_action( N(evolutiondex), user, N(closeext), mvo()
-           ( "user", user)
-           ( "ext_symbol", ext_symbol)
+           ( "user", user )
+           ( "ext_symbol", ext_symbol )
+           ( "memo", "" )
       );
    }
 
@@ -122,6 +123,7 @@ public:
       return push_action( N(evolutiondex), user, N(withdraw), mvo()
          ( "user", user )
          ( "to_withdraw", to_withdraw )
+         ( "memo", "" )
       );
    }
 

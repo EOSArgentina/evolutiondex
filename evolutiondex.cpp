@@ -16,7 +16,7 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
     }
 }
 
-void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol) {
+void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol, string memo) {
     require_auth( user );
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
@@ -25,7 +25,7 @@ void evolutiondex::closeext( const name& user, const extended_symbol& ext_symbol
     auto ext_balance = acnt_balance->balance;
     if (ext_balance.quantity.amount > 0) {
         action(permission_level{ get_self(), "active"_n }, ext_balance.contract, "transfer"_n,
-          std::make_tuple( get_self(), user, ext_balance.quantity, std::string("")) ).send();
+          std::make_tuple( get_self(), user, ext_balance.quantity, memo) ).send();
     }
     index.erase( acnt_balance );
 }
@@ -42,12 +42,12 @@ void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
     add_signed_ext_balance(from, incoming);
 }
 
-void evolutiondex::withdraw(name user, extended_asset to_withdraw){
+void evolutiondex::withdraw(name user, extended_asset to_withdraw, string memo){
     require_auth( user );
     check(to_withdraw.quantity.amount > 0, "quantity must be positive");
     add_signed_ext_balance(user, -to_withdraw);
     action(permission_level{ get_self(), "active"_n }, to_withdraw.contract, "transfer"_n,
-      std::make_tuple( get_self(), user, to_withdraw.quantity, std::string("Withdraw")) ).send();
+      std::make_tuple( get_self(), user, to_withdraw.quantity, memo) ).send();
 }
 
 void evolutiondex::remliquidity(name user, asset to_sell,

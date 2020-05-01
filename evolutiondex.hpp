@@ -22,8 +22,8 @@ namespace evolution {
            int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
          [[eosio::action]] void openext( const name& user, const name& payer, const extended_symbol& ext_symbol);
-         [[eosio::action]] void closeext ( const name& user, const extended_symbol& ext_symbol );
-         [[eosio::action]] void withdraw(name user, extended_asset to_withdraw);
+         [[eosio::action]] void closeext ( const name& user, const extended_symbol& ext_symbol, string memo);
+         [[eosio::action]] void withdraw(name user, extended_asset to_withdraw, string memo);
          [[eosio::action]] void addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
          [[eosio::action]] void remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2);
          [[eosio::action]] void exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2 );

@@ -30,6 +30,7 @@ const rl = readline.createInterface({
             user: 'ali',
 //            ext_symbol: {"contract":"eosio.token", "sym":"4,EOS"},
             ext_symbol: {"contract":"voice4", "sym":"4,VOICE"},            
+            memo: '',
         },
         }]
     }, {
