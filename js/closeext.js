@@ -28,8 +28,8 @@ const rl = readline.createInterface({
         }],
         data: {
             user: 'ali',
-//            ext_symbol: {"contract":"eosio.token", "sym":"4,EOS"},
-            ext_symbol: {"contract":"voice4", "sym":"4,VOICE"},            
+            to: 'ali',
+            ext_symbol: {"contract":"eosio.token", "sym":"4,EOS"},
             memo: '',
         },
         }]
