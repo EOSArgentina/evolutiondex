@@ -13,7 +13,7 @@ Open a channel for the second token you wish to trade in evodex:
 Close the contract's channel for a specific token: - it returns funds to the owner if
 necessary. -
 
-cleos push action evolutiondex closeext '["YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex closeext '["YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
 
 Fill your account with the desired tokens:
 
