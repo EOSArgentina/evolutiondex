@@ -27,7 +27,7 @@ Check your open channels and balances:
 
 Withdraw funds from your opened channels:
 
-    cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", {"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex withdraw '["YOUR_ACCOUNT", {"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
 
 Open the EOS/PESO evotoken: - add liquidity to the pair pool, set the initial fee for the trading pair and the fee controller -
 
