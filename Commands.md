@@ -10,10 +10,11 @@ Open a channel for the second token you wish to trade in evodex:
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"pesocontract", "sym":"4,PESO"}]' -p YOUR_ACCOUNT
 
-Close the contract's channel for a specific token: - it returns funds to the owner if
-necessary. -
+Close the contract's channel for a specific token. In case there are funds there,
+it returns them to the account "TO".
+. -
 
-cleos push action evolutiondex closeext '["YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
+cleos push action evolutiondex closeext '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "sym":"4,EOS"}, "memo"]' -p YOUR_ACCOUNT
 
 Fill your account with the desired tokens:
 
@@ -25,9 +26,9 @@ Check your open channels and balances:
 
     cleos get table evolutiondex YOUR_ACCOUNT evodexacnts
 
-Withdraw funds from your opened channels:
+Withdraw funds from your opened channels, to the account "TO":
 
-    cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", {"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
+    cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, "memo"]' -p YOUR_ACCOUNT
 
 Open the EOS/PESO evotoken: - add liquidity to the pair pool, set the initial fee for the trading pair and the fee controller -
 
@@ -124,7 +125,9 @@ where the file addliquidity.json contains:
             "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
-                "ext_symbol": {"contract":"pesocontract", "sym":"4,PESO"}           
+                "to": "TO",
+                "ext_symbol": {"contract":"pesocontract", "sym":"4,PESO"},
+                "memo": ""
             }
         },{
             "account": "evolutiondex",
@@ -132,7 +135,9 @@ where the file addliquidity.json contains:
             "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
-                "ext_symbol": {"contract":"eosio.token", "sym":"4,EOS"}       
+                "to": "TO",                
+                "ext_symbol": {"contract":"eosio.token", "sym":"4,EOS"},
+                "memo": ""
             }
         }
         ]
