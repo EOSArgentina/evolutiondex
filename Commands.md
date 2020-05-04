@@ -14,7 +14,7 @@ Close the contract's channel for a specific token. In case there are funds there
 it returns them to the account "TO".
 . -
 
-cleos push action evolutiondex closeext '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "sym":"4,EOS"}, "memo"]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex closeext '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "sym":"4,EOS"}, "memo"]' -p YOUR_ACCOUNT
 
 Fill your account with the desired tokens:
 
@@ -28,7 +28,7 @@ Check your open channels and balances:
 
 Withdraw funds from your opened channels, to the account "TO":
 
-    cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, "memo"]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex withdraw '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, "memo"]' -p YOUR_ACCOUNT
 
 Open the EOS/PESO evotoken: - add liquidity to the pair pool, set the initial fee for the trading pair and the fee controller -
 
