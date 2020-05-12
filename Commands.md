@@ -10,10 +10,11 @@ Open a channel for the second token you wish to trade in evodex:
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"pesocontract", "sym":"4,PESO"}]' -p YOUR_ACCOUNT
 
-Close the contract's channel for a specific token: - it returns funds to the owner if
-necessary. -
+Close the contract's channel for a specific token. In case there are funds there,
+it returns them to the account "TO".
+. -
 
-cleos push action evolutiondex closeext '["YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex closeext '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "sym":"4,EOS"}, "memo"]' -p YOUR_ACCOUNT
 
 Fill your account with the desired tokens:
 
@@ -25,9 +26,9 @@ Check your open channels and balances:
 
     cleos get table evolutiondex YOUR_ACCOUNT evodexacnts
 
-Withdraw funds from your opened channels:
+Withdraw funds from your opened channels, to the account "TO":
 
-    cleos -v push action evolutiondex withdraw '["YOUR_ACCOUNT", {"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex withdraw '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, "memo"]' -p YOUR_ACCOUNT
 
 Open the EOS/PESO evotoken: - add liquidity to the pair pool, set the initial fee for the trading pair and the fee controller -
 
@@ -40,17 +41,21 @@ Check your evotokens balance:
 Add more liquidity to a pool: - set the exact amount of evotoken to obtain, in this case 1.0000 EOSPESO, 
 and the maximum you are willing to pay of each token of the pair. -
 
-    cleos push action evolutiondex addliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", {"contract":"pesocontract", "quantity":"2.0000 PESO"},{"contract":"eosio.token", "quantity":"2.0000 EOS"}]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex addliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", "2.0000 PESO","2.0000 EOS"]' -p YOUR_ACCOUNT
 
 Sell your evotokens and retire liquidity: - the amount of evotoken is exact and the other two are minima required. -
 
-    cleos push action evolutiondex remliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", {"contract":"pesocontract", "quantity":"0.1000 PESO"},{"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex remliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", "0.1000 PESO", "1.0000 EOS"]' -p YOUR_ACCOUNT
 
-Exchange your tokens: - The negative input is the amount you want to obtain from the exchange while the positive
-one is what you are willing to pay. The order of the input tokens must match the order at initialization.
-The first amount will be exact, and the second will be taken as a maximum allowed by the user. -
+Exchange your tokens: 
+There two methods. The first one is to do a transfer to the contract with a memo starting with "exchange:" and followed by the details of your operation, with the format "EVOTOKN, min_expected_asset;memo". Blank spaces right before EVOTOKN and min_expected_asset are ignore . The amount obtained by the user will be computed by the contract and executed only if it is at least min_expected_asset. 
 
-    cleos push action evolutiondex exchange '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"pesocontract", "quantity":"-0.1000 PESO"},{"contract":"eosio.token", "quantity":"1.0000 EOS"}]' -p YOUR_ACCOUNT
+    cleos push action eosio.token '["YOUR_ACCOUNT", "evolutiondex", "1.0000 EOS", "exchange: EOSPESO, 0.1000 PESO;memo for the transfer]' -p YOUR_ACCOUNT
+
+The other method operates between funds already deposited in the contract. - The negative input is the amount you want to obtain from the exchange while the positive
+one is what you are willing to pay. The order of the input tokens must match the order at initialization. The first amount will be exact, and the second will be taken as a maximum allowed by the user. -
+
+    cleos push action evolutiondex exchange '["YOUR_ACCOUNT", "EOSPESO", "-0.1000 PESO","1.0000 EOS"]' -p YOUR_ACCOUNT
 
 Transfer your evotokens to another account:
 
@@ -60,7 +65,7 @@ See evotoken stats:
 
     cleos get table evolutiondex EOSPESO stat
 
-In most practical cases, users will prefer to run many actions in a single transaction.
+In many practical cases, users will prefer to run many actions in a single transaction.
 For example, if you want to add liquidity, you will probably prefer to close the accounts in the contract evolutiondex corresponding to the external tokens, to avoid spending RAM. To that end, you may run:
 
     cleos push transaction addliquidity.json
@@ -124,7 +129,9 @@ where the file addliquidity.json contains:
             "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
-                "ext_symbol": {"contract":"pesocontract", "sym":"4,PESO"}           
+                "to": "TO",
+                "ext_symbol": {"contract":"pesocontract", "sym":"4,PESO"},
+                "memo": ""
             }
         },{
             "account": "evolutiondex",
@@ -132,16 +139,18 @@ where the file addliquidity.json contains:
             "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
-                "ext_symbol": {"contract":"eosio.token", "sym":"4,EOS"}       
+                "to": "TO",                
+                "ext_symbol": {"contract":"eosio.token", "sym":"4,EOS"},
+                "memo": ""
             }
         }
         ]
     }    
 
-The same idea applies to the operations of removing liquidity and exchange.
+The same idea applies to the operations of removing liquidity and inittoken.
 Typically, a graphical user interface will perform this kind of multiaction transactions.
 
-Finally, to change the fee for operating through EOSPESO  run:
+Finally, to change the fee for operating through EOSPESO run:
 
     cleos push action evolutiondex changefee '["4,EOSPESO", "37"]' -p FEE_CONTROLLER
 

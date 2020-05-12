@@ -113,15 +113,19 @@ public:
 
    action_result closeext ( const name user, const extended_symbol ext_symbol ){ 
       return push_action( N(evolutiondex), user, N(closeext), mvo()
-           ( "user", user)
-           ( "ext_symbol", ext_symbol)
+           ( "user", user )
+           ( "to", user )
+           ( "ext_symbol", ext_symbol )
+           ( "memo", "" )
       );
    }
 
    action_result withdraw(name user, extended_asset to_withdraw) {
       return push_action( N(evolutiondex), user, N(withdraw), mvo()
          ( "user", user )
+         ( "to", user )
          ( "to_withdraw", to_withdraw )
+         ( "memo", "" )
       );
    }
 
@@ -137,32 +141,31 @@ public:
       );
    }
 
-   action_result addliquidity(name user, asset to_buy, 
-     extended_asset max_ext_asset1, extended_asset max_ext_asset2) {
+   action_result addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2) {
       return push_action( N(evolutiondex), user, N(addliquidity), mvo()
          ( "user", user )
          ( "to_buy", to_buy )
-         ( "max_ext_asset1", max_ext_asset1)
-         ( "max_ext_asset2", max_ext_asset2)
+         ( "max_asset1", max_asset1)
+         ( "max_asset2", max_asset2)
       );
    }
 
    action_result remliquidity(name user, asset to_sell,
-     extended_asset min_ext_asset1, extended_asset min_ext_asset2) {
+     asset min_asset1, asset min_asset2) {
       return push_action( N(evolutiondex), user, N(remliquidity), mvo()
          ( "user", user )
          ( "to_sell", to_sell )
-         ( "min_ext_asset1", min_ext_asset1)
-         ( "min_ext_asset2", min_ext_asset2)
+         ( "min_asset1", min_asset1)
+         ( "min_asset2", min_asset2)
       );
    }
 
-   action_result exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2 ) {
+   action_result exchange( name user, symbol_code through, asset asset1, asset asset2 ) {
       return push_action( N(evolutiondex), user, N(exchange), mvo()
          ( "user", user )
          ( "through", through)
-         ( "ext_asset1", ext_asset1 )
-         ( "ext_asset2", ext_asset2 )
+         ( "asset1", asset1 )
+         ( "asset2", asset2 )
       );
    }
 
@@ -261,25 +264,17 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( fc::json::to_string(alice_evo_balance, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ), 
     fc::json::to_string(bal, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ) );
 
-    addliquidity( N(alice), asset::from_string("50.0000 EVO"), extended_asset{asset{100000000000, EOS}, N(eosio.token)}, extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
+    addliquidity( N(alice), asset::from_string("50.0000 EVO"), 
+      asset{100000000000, EOS}, asset{100000000000, VOICE} );
 
     produce_blocks();
 
     remliquidity( N(alice), asset::from_string("17.1872 EVO"),
-      extended_asset{asset{1, EOS}, N(eosio.token)},
-      extended_asset{asset{1, VOICE}, N(eosio.token)});
+      asset{1, EOS}, asset{1, VOICE} );
       
-    exchange( N(alice), EVO, 
-      extended_asset{asset{40000, EOS}, N(eosio.token)},
-      extended_asset{asset{-100000, VOICE}, N(eosio.token)});
-
-    exchange( N(alice), EVO, 
-      extended_asset{asset{1000, EOS}, N(eosio.token)},
-      extended_asset{asset{-48500, VOICE}, N(eosio.token)});
-
-    exchange( N(alice), EVO, 
-      extended_asset{asset{1, EOS}, N(eosio.token)},
-      extended_asset{asset{-9, VOICE}, N(eosio.token)});
+    exchange( N(alice), EVO.to_symbol_code(), asset{40000, EOS},asset{-100000, VOICE} );
+    exchange( N(alice), EVO.to_symbol_code(), asset{1000, EOS}, asset{-48500, VOICE} );
+    exchange( N(alice), EVO.to_symbol_code(), asset{1, EOS}, asset{-9, VOICE} );
 
     auto new_vec = system_balance(5199429);
     vector <int64_t> final_system_balance = {10000073864, 999999190299, 100000328128};
@@ -290,8 +285,7 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( success(), changefee(EVO, 50) );
 
     addliquidity( N(alice), asset::from_string("50.0000 EVO"),
-      extended_asset{asset{100000000000, EOS}, N(eosio.token)},
-      extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
+      asset{100000000000, EOS}, asset{100000000000, VOICE} );
 
     new_vec = system_balance(5199429);
     final_system_balance = {10000124116, 1000004215279, 100000828128};
@@ -345,9 +339,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     auto old_alice_bal_0 = balance(N(alice),0);
     auto old_alice_bal_1 = balance(N(alice),1);
 
-    exchange( N(alice), EVO, 
-      extended_asset{asset{40000, EOS}, N(eosio.token)},
-      extended_asset{asset{-10000, VOICE}, N(eosio.token)});
+    exchange( N(alice), EVO.to_symbol_code(), asset{40000, EOS}, asset{-10000, VOICE} );
     auto new_total = total();
     auto new_vec = system_balance(5199429);
     auto new_alice_bal_0 = balance(N(alice),0);
@@ -361,7 +353,8 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     old_vec = system_balance(5199429);
     old_alice_bal_0 = balance(N(alice), 0);
     old_alice_bal_1 = balance(N(alice), 1);
-    addliquidity( N(alice), asset::from_string("0.0001 EVO"), extended_asset{asset{100000000000, EOS}, N(eosio.token)}, extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
+    addliquidity( N(alice), asset::from_string("0.0001 EVO"), 
+      asset{100000000000, EOS}, asset{100000000000, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     new_alice_bal_0 = balance(N(alice),0);
@@ -378,8 +371,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     old_alice_bal_0 = balance(N(alice), 0);
     old_alice_bal_1 = balance(N(alice), 1);
     remliquidity( N(alice), asset::from_string("0.0001 EVO"),
-      extended_asset{asset{0, EOS}, N(eosio.token)},
-      extended_asset{asset{0, VOICE}, N(eosio.token)});
+      asset{0, EOS}, asset{0, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     new_alice_bal_0 = balance(N(alice), 0);
@@ -391,9 +383,8 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
 
     old_total = total();
     old_vec = system_balance(293455877189);
-    exchange( N(bob), ETUSD, 
-      extended_asset{asset{-40000000000000, EOS}, N(eosio.token)},
-      extended_asset{asset{3000000000000000000, TUSD}, N(eosio.token)});
+    exchange( N(bob), ETUSD.to_symbol_code(), asset{-40000000000000, EOS},
+      asset{3000000000000000000, TUSD});
     new_total = total();
     new_vec = system_balance(293455877189);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -401,9 +392,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
 
     old_total = total();    
     old_vec = system_balance(5199429);
-    exchange( N(bob), EVO, 
-      extended_asset{asset{40000000, EOS}, N(eosio.token)},
-      extended_asset{asset{-10000, VOICE}, N(eosio.token)});
+    exchange( N(bob), EVO.to_symbol_code(), asset{40000000, EOS}, asset{-10000, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -415,7 +404,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     old_total = total();
     old_vec = system_balance(5199429);
     addliquidity( N(alice), asset{1500000000000000000, EVO}, 
-       extended_asset{asset{4000000000000000000, EOS}, N(eosio.token)}, extended_asset{asset{4000000000000000000, VOICE}, N(eosio.token)});
+       asset{4000000000000000000, EOS}, asset{4000000000000000000, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -423,9 +412,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
 
     old_total = total(); 
     old_vec = system_balance(5199429);
-    exchange( N(alice), EVO, 
-      extended_asset{asset{3875926873243173478, EOS}, N(eosio.token)},
-      extended_asset{asset{-1, VOICE}, N(eosio.token)});
+    exchange( N(alice), EVO.to_symbol_code(), asset{3875926873243173478, EOS}, asset{-1, VOICE});
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -474,9 +461,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
     auto old_total = total();
     auto old_vec = system_balance(5199429);
 
-    exchange( N(alice), EVO, 
-      extended_asset{asset{40000, EOS}, N(eosio.token)},
-      extended_asset{asset{-10000, VOICE}, N(eosio.token)});
+    exchange( N(alice), EVO.to_symbol_code(), asset{40000, EOS}, asset{-10000, VOICE} );
     auto new_total = total();
     auto new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -484,7 +469,8 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
     
     old_total = total();
     old_vec = system_balance(5199429);
-    addliquidity( N(alice), asset::from_string("0.0001 EVO"), extended_asset{asset{100000000000, EOS}, N(eosio.token)}, extended_asset{asset{100000000000, VOICE}, N(eosio.token)});
+    addliquidity( N(alice), asset::from_string("0.0001 EVO"), 
+      asset{100000000000, EOS}, asset{100000000000, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -494,9 +480,8 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
 
     old_total = total();
     old_vec = system_balance(5199429);
-    remliquidity( N(alice), asset::from_string("0.0001 EVO"),
-      extended_asset{asset{0, EOS}, N(eosio.token)},
-      extended_asset{asset{0, VOICE}, N(eosio.token)});
+    remliquidity( N(alice), asset::from_string("0.0001 EVO"), 
+      asset{0, EOS}, asset{0, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -504,9 +489,8 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
 
     old_total = total();
     old_vec = system_balance(293455877189);
-    exchange( N(bob), ETUSD, 
-      extended_asset{asset{-40000000000000, EOS}, N(eosio.token)},
-      extended_asset{asset{3000000000000000000, TUSD}, N(eosio.token)});
+    exchange( N(bob), ETUSD.to_symbol_code(), 
+      asset{-40000000000000, EOS}, asset{3000000000000000000, TUSD});
     new_total = total();
     new_vec = system_balance(293455877189);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -514,9 +498,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
 
     old_total = total();    
     old_vec = system_balance(5199429);
-    exchange( N(bob), EVO, 
-      extended_asset{asset{40000000, EOS}, N(eosio.token)},
-      extended_asset{asset{-10000, VOICE}, N(eosio.token)});
+    exchange( N(bob), EVO.to_symbol_code(), asset{40000000, EOS}, asset{-10000, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -528,7 +510,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
     old_total = total();
     old_vec = system_balance(5199429);
     addliquidity( N(alice), asset{1500000000000000000, EVO}, 
-       extended_asset{asset{4000000000000000000, EOS}, N(eosio.token)}, extended_asset{asset{4000000000000000000, VOICE}, N(eosio.token)});
+       asset{4000000000000000000, EOS}, asset{4000000000000000000, VOICE} );
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
@@ -536,14 +518,83 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
 
     old_total = total(); 
     old_vec = system_balance(5199429);
-    exchange( N(alice), EVO, 
-      extended_asset{asset{3875926873243173478, EOS}, N(eosio.token)},
-      extended_asset{asset{-1, VOICE}, N(eosio.token)});
+    exchange( N(alice), EVO.to_symbol_code(), asset{3875926873243173478, EOS}, asset{-1, VOICE});
     new_total = total();
     new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 } FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
+    const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
+    abi_def abi_evo;
+    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
+
+    create( N(alice), asset{4611686018427387903, EOS});
+    create( N(bob), asset{4611686018427387903, VOICE} );
+    create( N(alice), asset{4611686018427387903, TUSD});
+    issue( N(alice), N(alice), asset{4611686018427387903, EOS}, "");
+    issue( N(bob), N(bob), asset{4611686018427387903, VOICE}, "");
+    issue( N(alice), N(alice), asset{4611686018427387903, TUSD}, "");
+
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+
+    openext( N(alice), N(alice), extended_symbol{EOS, N(eosio.token)});
+    openext( N(alice), N(alice), extended_symbol{VOICE, N(eosio.token)});
+    openext( N(alice), N(alice), extended_symbol{TUSD, N(eosio.token)});
+    openext( N(bob), N(alice), extended_symbol{EOS, N(eosio.token)});
+    openext( N(bob), N(alice), extended_symbol{VOICE, N(eosio.token)});
+    openext( N(bob), N(alice), extended_symbol{TUSD, N(eosio.token)});
+
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4610000000000000000, EOS}, "");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{4611686018427387000, VOICE}, "deposit to: alice");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{903, VOICE}, "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4500000000000000000, TUSD}, "");
+    transfer( N(eosio.token), N(alice), N(bob), asset{30000000000000000, TUSD}, "");
+
+    inittoken( N(alice), EVO,
+      extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
+      extended_asset{asset{961168601842738, VOICE}, N(eosio.token)},
+      12, N(wevotethefee));
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("symbol mismatch"), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000, EOS}, 
+      "exchange: EVO, 166536 VOICE") );
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000, EOS}, 
+      "exchange: EVO, 16.6536 VOICE") );
+
+    BOOST_REQUIRE_EQUAL( success(), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000, EOS}, 
+      "exchange: EVO, 16.6535 VOICE") );
+
+    inittoken( N(alice), ETUSD,
+      extended_asset{asset{100000000000000, EOS}, N(eosio.token)},
+      extended_asset{asset{991168601842738, TUSD}, N(eosio.token)},
+      0, N(wevotethefee));
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000000, TUSD}, 
+      "exchange: ETUSD, 403.5641 EOS") );
+
+    BOOST_REQUIRE_EQUAL( success(), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000000, TUSD}, 
+      "exchange: ETUSD, 403.5640 EOS") );
+
+    auto old_vec = system_balance(5199429);
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000, EOS}, 
+      "exchange: EVO, 10000 VOICE; nothing to say");
+    auto new_vec = system_balance(5199429);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
+    old_vec = system_balance(293455877189);
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset{3000000000000000000, TUSD}, 
+      "exchange: ETUSD, 40000000000000 EOS;");
+    new_vec = system_balance(293455877189);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+} FC_LOG_AND_RETHROW()
+
 
 BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
 
@@ -558,7 +609,8 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Extended_symbol not registered for this user, please run openext action"),
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol not registered for this user,\
+ please run openext action or write exchange details in the memo of your transfer"),
       transfer( N(eosio.token), N(alice), N(evolutiondex), asset{1000,EOS}, "") );
 
     // OPENEXT

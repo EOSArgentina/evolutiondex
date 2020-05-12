@@ -22,11 +22,11 @@ namespace evolution {
            int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
          [[eosio::action]] void openext( const name& user, const name& payer, const extended_symbol& ext_symbol);
-         [[eosio::action]] void closeext ( const name& user, const extended_symbol& ext_symbol );
-         [[eosio::action]] void withdraw(name user, extended_asset to_withdraw);
-         [[eosio::action]] void addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
-         [[eosio::action]] void remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2);
-         [[eosio::action]] void exchange( name user, symbol through, extended_asset ext_asset1, extended_asset ext_asset2 );
+         [[eosio::action]] void closeext ( const name& user, const name& to, const extended_symbol& ext_symbol, string memo);
+         [[eosio::action]] void withdraw(name user, name to, extended_asset to_withdraw, string memo);
+         [[eosio::action]] void addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2);
+         [[eosio::action]] void remliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2);
+         [[eosio::action]] void exchange( name user, symbol_code through, asset asset1, asset asset2 );
          [[eosio::action]] void changefee(symbol sym, int newfee);
 
          [[eosio::action]] void transfer(const name& from, const name& to, 
@@ -69,8 +69,10 @@ namespace evolution {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
 
          void add_signed_ext_balance( const name& owner, const extended_asset& value );
-         void add_signed_liq(name user, asset to_buy, bool is_buying, extended_asset max_ext_asset1, extended_asset max_ext_asset2);
+         void add_signed_liq(name user, asset to_buy, bool is_buying, asset max_asset1, asset max_asset2);
+         void memoexchange(name user, asset quantity, string details);
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);
+         asset string_to_asset(string input);
 
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
          void sub_balance( const name& owner, const asset& value );
