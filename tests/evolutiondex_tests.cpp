@@ -231,7 +231,7 @@ static symbol EOS = symbol::from_string("4,EOS");
 static symbol VOICE = symbol::from_string("4,VOICE");
 static symbol TUSD = symbol::from_string("4,TUSD");
 
-BOOST_AUTO_TEST_SUITE(eosio_token_tests)
+BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
 
 BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
@@ -552,10 +552,11 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
     transfer( N(eosio.token), N(alice), N(evolutiondex), asset{4500000000000000000, TUSD}, "");
     transfer( N(eosio.token), N(alice), N(bob), asset{30000000000000000, TUSD}, "");
 
-    inittoken( N(alice), EVO,
-      extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
-      extended_asset{asset{961168601842738, VOICE}, N(eosio.token)},
-      12, N(wevotethefee));
+    BOOST_REQUIRE_EQUAL( success(),
+      inittoken( N(alice), EVO,
+        extended_asset{asset{230584300921369, EOS}, N(eosio.token)},
+        extended_asset{asset{461168601842738, VOICE}, N(eosio.token)},
+        12, N(wevotethefee)) );
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("symbol mismatch"), 
       transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000, EOS}, 
@@ -584,13 +585,13 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
 
     auto old_vec = system_balance(5199429);
     transfer( N(eosio.token), N(alice), N(evolutiondex), asset{40000, EOS}, 
-      "exchange: EVO, 10000 VOICE; nothing to say");
+      "exchange: EVO, 10000 VOICE, nothing to say");
     auto new_vec = system_balance(5199429);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 
     old_vec = system_balance(293455877189);
     transfer( N(eosio.token), N(bob), N(evolutiondex), asset{3000000000000000000, TUSD}, 
-      "exchange: ETUSD, 40000000000000 EOS;");
+      "exchange: ETUSD, 40000000000000 EOS,");
     new_vec = system_balance(293455877189);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 } FC_LOG_AND_RETHROW()

@@ -1,4 +1,5 @@
 #include "evolutiondex.hpp"
+#include "utils.hpp"
 
 using namespace evolution;
 
@@ -31,17 +32,24 @@ void evolutiondex::closeext( const name& user, const name& to, const extended_sy
 }
 
 void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
+    
+    constexpr string_view DEPOSIT_TO = "deposit to:";
+    constexpr string_view EXCHANGE   = "exchange:";
+
     if (from == get_self()) return;
     check(to == get_self(), "This transfer is not for evolutiondex");
     check(quantity.amount >= 0, "quantity must be positive");
-    if ( (memo.substr(0, 9)) == "exchange:") {
-      memoexchange(from, quantity, get_first_receiver(), memo.substr(9));
+
+    auto incoming = extended_asset{quantity, get_first_receiver()};
+
+    string_view memosv(memo);
+    if ( starts_with(memosv, EXCHANGE) ) {
+      memoexchange(from, incoming, memosv.substr(EXCHANGE.size()) );
     } else {
-      if ( (memo.substr(0, 12)) == "deposit to: ") {
-          from = name(memo.substr(12));
+      if ( starts_with(memosv, DEPOSIT_TO) ) {
+          from = name(trim(memosv.substr(DEPOSIT_TO.size())));
           check(from != get_self(), "Donation not accepted");
       }
-      extended_asset incoming = extended_asset{quantity, get_first_receiver()};
       add_signed_ext_balance(from, incoming);
     }
 }
@@ -147,36 +155,33 @@ void evolutiondex::exchange( name user, symbol_code through, asset asset1, asset
     });
 }
 
-// details has the structure "EVOTOKN,min_expected_asset;memo"
-void evolutiondex::memoexchange(name user, asset quantity, name contract, string details){
-    int comma = details.find(",");
-    check(comma != -1, "there must be a comma between evotoken symbol and min_expected_asset");
-    int semicolon = details.find(";");
-    check(semicolon > comma, "there must be a semicolon between min_expected_asset and memo");
-    string symbol_code_string = details.substr(0, comma);
-    string min_expected_asset_string = details.substr(comma + 1, semicolon - comma - 1);
-    string memo = details.substr(semicolon + 1);
-    
-    int last_space = symbol_code_string.rfind(" ");
-    symbol_code_string = symbol_code_string.substr(last_space + 1);
-    auto through = symbol_code(symbol_code_string);
-    auto min_expected_asset = string_to_asset(min_expected_asset_string);
+// details has the structure "EVOTOKN,min_expected_asset,memo"
+void evolutiondex::memoexchange(name user, extended_asset amount, string_view details){
+    auto quantity = amount.quantity;
+    auto contract = amount.contract;
 
-    stats statstable( get_self(), through.raw() );
-    const auto& token = statstable.find( through.raw() );
+    auto parts = split(details, ",");
+    check(parts.size() >= 2 && parts.size() <= 3, "Expected format 'EVOTOKEN,min_expected_asset,memo'");
+
+    auto evo_token    = symbol_code(parts[0]);
+    auto min_expected = asset_from_string(parts[1]);
+    auto memo         = std::string(parts.size() == 3 ? parts[2] : "");
+
+    stats statstable( get_self(), evo_token.raw() );
+    const auto token = statstable.find( evo_token.raw() );
     check ( token != statstable.end(), "token does not exist" );
     bool in_first;
     if ((token->pool1.quantity.symbol == quantity.symbol) && 
-        (token->pool2.quantity.symbol == min_expected_asset.symbol)) {
+        (token->pool2.quantity.symbol == min_expected.symbol)) {
         in_first = true;
         check(token->pool1.contract == contract, "you are transfering from an incorrect contract");
     // testear estos mandando desde otros contratos.
     } else if ((token->pool2.quantity.symbol == quantity.symbol) &&
-             (token->pool1.quantity.symbol == min_expected_asset.symbol)) {
+             (token->pool1.quantity.symbol == min_expected.symbol)) {
         in_first = false;
         check(token->pool2.contract == contract, "you are transfering from an incorrect contract");
     }
-    else check(false, "symbol mismatch"); 
+    else check(false, "symbol mismatch");
     int64_t P_in, P_out;
     if (in_first) { 
       P_in = token-> pool1.quantity.amount;
@@ -187,7 +192,7 @@ void evolutiondex::memoexchange(name user, asset quantity, name contract, string
     }
     auto A_in = quantity.amount;
     int64_t A_out = compute(-A_in, P_out, P_in + A_in, token->fee);
-    check(min_expected_asset.amount <= -A_out, "available is less than expected");
+    check(min_expected.amount <= -A_out, "available is less than expected");
     extended_asset ext_asset1, ext_asset2, ext_asset_out;
     if (in_first) { 
       ext_asset1 = extended_asset{A_in, token-> pool1.get_extended_symbol()};
@@ -203,7 +208,7 @@ void evolutiondex::memoexchange(name user, asset quantity, name contract, string
       a.pool2 += ext_asset2;
     });
     action(permission_level{ get_self(), "active"_n }, ext_asset_out.contract, "transfer"_n,
-      std::make_tuple( get_self(), user, ext_asset_out.quantity, memo) ).send();
+      std::make_tuple( get_self(), user, ext_asset_out.quantity, std::string(memo)) ).send();
 }
 
 asset evolutiondex::string_to_asset(string input) {
