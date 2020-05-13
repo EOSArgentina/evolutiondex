@@ -47,8 +47,8 @@ Sell your evotokens and retire liquidity: - the amount of evotoken is exact and 
 
     cleos push action evolutiondex remliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", "0.1000 PESO", "1.0000 EOS"]' -p YOUR_ACCOUNT
 
-Exchange your tokens: 
-There two methods. The first one is to do a transfer to the contract with a memo starting with "exchange:" and followed by the details of your operation, with the format "EVOTOKN, min_expected_asset;memo". Blank spaces right before EVOTOKN and min_expected_asset are ignore . The amount obtained by the user will be computed by the contract and executed only if it is at least min_expected_asset. 
+Exchange your tokens.
+There two methods. The first one is to do a transfer to the contract with a memo starting with "exchange:" and followed by the details of your operation, with the format "EVOTOKN, min_expected_asset;memo". Blank spaces right before EVOTOKN and min_expected_asset are ignored. The amount obtained by the user will be computed by the contract and executed only if it is at least min_expected_asset. 
 
     cleos push action eosio.token '["YOUR_ACCOUNT", "evolutiondex", "1.0000 EOS", "exchange: EOSPESO, 0.1000 PESO;memo for the transfer]' -p YOUR_ACCOUNT
 

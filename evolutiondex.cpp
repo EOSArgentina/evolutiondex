@@ -35,7 +35,7 @@ void evolutiondex::deposit(name from, name to, asset quantity, string memo) {
     check(to == get_self(), "This transfer is not for evolutiondex");
     check(quantity.amount >= 0, "quantity must be positive");
     if ( (memo.substr(0, 9)) == "exchange:") {
-      memoexchange(from, quantity, memo.substr(9));
+      memoexchange(from, quantity, get_first_receiver(), memo.substr(9));
     } else {
       if ( (memo.substr(0, 12)) == "deposit to: ") {
           from = name(memo.substr(12));
@@ -147,26 +147,35 @@ void evolutiondex::exchange( name user, symbol_code through, asset asset1, asset
     });
 }
 
-void evolutiondex::memoexchange(name user, asset quantity, string details){
+// details has the structure "EVOTOKN,min_expected_asset;memo"
+void evolutiondex::memoexchange(name user, asset quantity, name contract, string details){
     int comma = details.find(",");
+    check(comma != -1, "there must be a comma between evotoken symbol and min_expected_asset");
     int semicolon = details.find(";");
+    check(semicolon > comma, "there must be a semicolon between min_expected_asset and memo");
     string symbol_code_string = details.substr(0, comma);
-    string required_string = details.substr(comma + 1, semicolon - comma - 1);
+    string min_expected_asset_string = details.substr(comma + 1, semicolon - comma - 1);
     string memo = details.substr(semicolon + 1);
     
     int last_space = symbol_code_string.rfind(" ");
     symbol_code_string = symbol_code_string.substr(last_space + 1);
     auto through = symbol_code(symbol_code_string);
-    auto required = string_to_asset(required_string);
+    auto min_expected_asset = string_to_asset(min_expected_asset_string);
 
     stats statstable( get_self(), through.raw() );
     const auto& token = statstable.find( through.raw() );
     check ( token != statstable.end(), "token does not exist" );
     bool in_first;
     if ((token->pool1.quantity.symbol == quantity.symbol) && 
-        (token->pool2.quantity.symbol == required.symbol)) in_first = true;
-    else if ((token->pool2.quantity.symbol == quantity.symbol) &&
-             (token->pool1.quantity.symbol == required.symbol)) in_first = false;
+        (token->pool2.quantity.symbol == min_expected_asset.symbol)) {
+        in_first = true;
+        check(token->pool1.contract == contract, "you are transfering from an incorrect contract");
+    // testear estos mandando desde otros contratos.
+    } else if ((token->pool2.quantity.symbol == quantity.symbol) &&
+             (token->pool1.quantity.symbol == min_expected_asset.symbol)) {
+        in_first = false;
+        check(token->pool2.contract == contract, "you are transfering from an incorrect contract");
+    }
     else check(false, "symbol mismatch"); 
     int64_t P_in, P_out;
     if (in_first) { 
@@ -178,7 +187,7 @@ void evolutiondex::memoexchange(name user, asset quantity, string details){
     }
     auto A_in = quantity.amount;
     int64_t A_out = compute(-A_in, P_out, P_in + A_in, token->fee);
-    check(required.amount <= -A_out, "available is less than expected");
+    check(min_expected_asset.amount <= -A_out, "available is less than expected");
     extended_asset ext_asset1, ext_asset2, ext_asset_out;
     if (in_first) { 
       ext_asset1 = extended_asset{A_in, token-> pool1.get_extended_symbol()};
@@ -198,10 +207,12 @@ void evolutiondex::memoexchange(name user, asset quantity, string details){
 }
 
 asset evolutiondex::string_to_asset(string input) {
-    int space = input.rfind(" ");
+    int space = input.find(" ");
+    check(space == input.rfind(" "), "only one space admitted in min_expected_asset");
     string amount_string = input.substr(0, space);
     string symbol_code_string = input.substr(space + 1);
     int dot = amount_string.find(".");
+    check(dot == amount_string.rfind("."), "at most one dot admitted in amount_string");
     int precision; long long amount;
     if (dot == -1) {
       precision = 0;
