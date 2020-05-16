@@ -126,25 +126,25 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     if (token-> supply.amount == 0) statstable.erase(token);
 }
 
-void evolutiondex::exchange( name user, symbol_code through, 
+void evolutiondex::exchange( name user, symbol_code pair_token, 
   extended_asset ext_asset_in, asset min_expected) {
-    auto ext_asset_out = process_exch(through, ext_asset_in, min_expected);
+    auto ext_asset_out = process_exch(pair_token, ext_asset_in, min_expected);
     add_signed_ext_balance(user, -ext_asset_in);
     add_signed_ext_balance(user, ext_asset_out);
 }
 
-extended_asset evolutiondex::process_exch(symbol_code evo_token,
-  extended_asset paying, asset min_expected){
-    stats statstable( get_self(), evo_token.raw() );
-    const auto token = statstable.find( evo_token.raw() );
+extended_asset evolutiondex::process_exch(symbol_code pair_token,
+  extended_asset ext_asset_in, asset min_expected){
+    stats statstable( get_self(), pair_token.raw() );
+    const auto token = statstable.find( pair_token.raw() );
     check ( token != statstable.end(), "pair token does not exist" );
     bool in_first;
-    if ((token->pool1.get_extended_symbol() == paying.get_extended_symbol()) && 
+    if ((token->pool1.get_extended_symbol() == ext_asset_in.get_extended_symbol()) && 
         (token->pool2.quantity.symbol == min_expected.symbol)) {
         in_first = true;
     // testear estos mandando desde otros contratos.
     } else if ((token->pool1.quantity.symbol == min_expected.symbol) &&
-               (token->pool2.get_extended_symbol() == paying.get_extended_symbol())) {
+               (token->pool2.get_extended_symbol() == ext_asset_in.get_extended_symbol())) {
         in_first = false;
     }
     else check(false, "extended_symbol mismatch");
@@ -156,17 +156,17 @@ extended_asset evolutiondex::process_exch(symbol_code evo_token,
       P_in = token-> pool2.quantity.amount;
       P_out = token-> pool1.quantity.amount;
     }
-    auto A_in = paying.quantity.amount;
+    auto A_in = ext_asset_in.quantity.amount;
     int64_t A_out = compute(-A_in, P_out, P_in + A_in, token->fee);
     check(min_expected.amount <= -A_out, "available is less than expected");
     extended_asset ext_asset1, ext_asset2, ext_asset_out;
     if (in_first) { 
-      ext_asset1 = paying;
+      ext_asset1 = ext_asset_in;
       ext_asset2 = extended_asset{A_out, token-> pool2.get_extended_symbol()};
       ext_asset_out = -ext_asset2;
     } else {
       ext_asset1 = extended_asset{A_out, token-> pool1.get_extended_symbol()};
-      ext_asset2 = paying;
+      ext_asset2 = ext_asset_in;
       ext_asset_out = -ext_asset1;
     }
     statstable.modify( token, same_payer, [&]( auto& a ) {
@@ -178,18 +178,15 @@ extended_asset evolutiondex::process_exch(symbol_code evo_token,
 
 // details has the structure "EVOTOKN,min_expected_asset,memo"
 void evolutiondex::memoexchange(name user, extended_asset ext_asset_in, string_view details){
-    auto quantity = ext_asset_in.quantity;
-    auto contract = ext_asset_in.contract;
-
     auto parts = split(details, ",");
     check(parts.size() >= 2 && parts.size() <= 3, "Expected format 'EVOTOKEN,min_expected_asset,memo'");
 
-    auto evo_token    = symbol_code(parts[0]);
+    auto pair_token   = symbol_code(parts[0]);
     auto min_expected = asset_from_string(parts[1]);
     auto memo         = std::string(parts.size() == 3 ? parts[2] : "");
 
     check(min_expected.amount >= 0, "min_expected must be expressed with a positive amount");
-    auto ext_asset_out = process_exch(evo_token, ext_asset_in, min_expected);
+    auto ext_asset_out = process_exch(pair_token, ext_asset_in, min_expected);
     action(permission_level{ get_self(), "active"_n }, ext_asset_out.contract, "transfer"_n,
       std::make_tuple( get_self(), user, ext_asset_out.quantity, std::string(memo)) ).send();
 }
@@ -223,10 +220,11 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     add_signed_ext_balance(user, -ext_asset2);
 }
 
-void evolutiondex::changefee(symbol sym, int newfee) {
+// cambiar symbol por symbol_code 
+void evolutiondex::changefee(symbol_code pair_token, int newfee) {
     check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
-    stats statstable( get_self(), sym.code().raw() );
-    const auto& token = statstable.find( sym.code().raw() );
+    stats statstable( get_self(), pair_token.raw() );
+    const auto& token = statstable.find( pair_token.raw() );
     check ( token != statstable.end(), "token does not exist" );
     require_auth(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {

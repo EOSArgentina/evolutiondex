@@ -27,7 +27,7 @@ namespace evolution {
          [[eosio::action]] void addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2);
          [[eosio::action]] void remliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2);
          [[eosio::action]] void exchange( name user, symbol_code through, extended_asset ext_asset_in, asset min_expected );
-         [[eosio::action]] void changefee(symbol sym, int newfee);
+         [[eosio::action]] void changefee(symbol_code pair_token, int newfee);
 
          [[eosio::action]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
