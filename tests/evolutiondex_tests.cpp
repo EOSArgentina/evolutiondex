@@ -551,7 +551,6 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
     issue( N(alice), N(alice), asset::from_string("461168601842738.7903 TUSD"), "");
     transfer( N(eosio.token), N(bob), N(alice), asset::from_string("0.0001 VOICE"), "");
 
- // Resumir con helper.
     push_action( N(carol), N(carol), N(create), 
       mvo() ("issuer", N(carol))("maximum_supply", asset::from_string("4.0000 EOS") ));
     push_action( N(carol), N(carol), N(issue), 
@@ -590,7 +589,6 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
       transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("4.0000 EOS"), 
       "exchange: EVO, 16.6536 VOICE") );
 
-    // agregar este chequeo para otro método exchange.
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol mismatch"), 
       transfer( N(carol), N(carol), N(evolutiondex), asset::from_string("4.0000 EOS"), 
       "exchange: EVO, 16.6535 VOICE") );
@@ -649,6 +647,15 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
     transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
     transfer( N(eosio.token), N(alice), N(bob), asset::from_string("0.0001 EOS"), "");
 
+    push_action( N(carol), N(carol), N(create), 
+      mvo() ("issuer", N(carol))("maximum_supply", asset::from_string("4.0000 EOS") ));
+    push_action( N(carol), N(carol), N(issue), 
+      mvo()("to", N(carol))( "quantity", asset::from_string("4.0000 EOS"))("memo", ""));
+    push_action( N(carol), N(carol), N(create), 
+      mvo() ("issuer", N(carol))("maximum_supply", asset::from_string("1.0000 VOICE") ));
+    push_action( N(carol), N(carol), N(issue), 
+      mvo()("to", N(carol))( "quantity", asset::from_string("1.0000 VOICE"))("memo", ""));
+
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
@@ -667,19 +674,43 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
       openext( N(cat), N(alice), extended_symbol{VOICE4, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
       extended_symbol{VOICE4, N(eosio.token)}) );
+    openext( N(carol), N(carol), extended_symbol{EOS4, N(carol)} );      
+    openext( N(carol), N(carol), extended_symbol{VOICE4, N(carol)} );
 
     BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex), 
       asset::from_string("1000.0000 EOS"), "") );
     BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex),
       asset::from_string("20000.0000 VOICE"), "") );
+    transfer( N(carol), N(carol), N(evolutiondex), asset::from_string("4.0000 EOS"), "" );
+    transfer( N(carol), N(carol), N(evolutiondex), asset::from_string("1.0000 VOICE"), "" );
 
     // INITTOKEN
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), EVO4, 
+      extended_asset{asset::from_string("0.0001 EOS"), N(eosio.token)},
+      extended_asset{asset::from_string("0.1000 VOICE"), N(eosio.token)}, 501, N(foo)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Both assets must be positive"), inittoken( N(alice), EVO4, 
+      extended_asset{asset::from_string("-0.0001 EOS"), N(eosio.token)},
+      extended_asset{asset::from_string("0.1000 VOICE"), N(eosio.token)}, 10, N(foo)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Initial amounts must be less than 10^15"), inittoken( N(alice), EVO4, 
+      extended_asset{asset::from_string("0.0001 EOS"), N(eosio.token)},
+      extended_asset{asset::from_string("100000000000.0001 VOICE"), N(eosio.token)}, 10, N(foo)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended symbols must be different"), inittoken( N(alice), EVO4, 
+      extended_asset{asset::from_string("0.0001 EOS"), N(eosio.token)},
+      extended_asset{asset::from_string("0.1000 EOS"), N(eosio.token)}, 10, N(foo)) );
+
     BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), EVO4, 
       extended_asset{asset::from_string("0.0001 EOS"), N(eosio.token)},
       extended_asset{asset::from_string("0.1000 VOICE"), N(eosio.token)}, 10, N(foo)) );
-    // Agregar chequeos
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("token symbol already exists"), inittoken( N(alice), EVO4, 
+      extended_asset{asset::from_string("0.0001 EOS"), N(eosio.token)},
+      extended_asset{asset::from_string("0.1000 VOICE"), N(eosio.token)}, 10, N(foo)) );
 
-    // si quiero hacer exchange excediendo los conectores salta "invalid parameters" (compute)
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol mismatch"), 
+      exchange( N(carol), EVO, extended_asset{asset::from_string("0.0001 EOS"), N(carol)},
+          asset::from_string("0.0000 VOICE") ) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol mismatch"), 
+      exchange( N(carol), EVO, extended_asset{asset::from_string("0.0001 VOICE"), N(carol)},
+      asset::from_string("1000.0000 EOS") ) );
 
     // CLOSEEXT
     BOOST_REQUIRE_EQUAL( success(), open( N(alice), EVO4, N(alice)) );
@@ -699,8 +730,6 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( success(), closeext( N(alice), N(bob),
       extended_symbol{EOS4, N(eosio.token)} ) );
     BOOST_REQUIRE_EQUAL( 10000000, token_balance( N(eosio.token), N(bob), EOS.value ));
-
-    // testear todos los checks, excepto las funciones de eosio.token.
 
     BOOST_CHECK( "missing authority of foo" == changefee(EVO, 50));
 } FC_LOG_AND_RETHROW()

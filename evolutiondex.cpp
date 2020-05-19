@@ -110,12 +110,13 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
       token->pool1.quantity.symbol}, token->pool1.contract};
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, P2, A, fee),
       token->pool2.quantity.symbol}, token->pool2.contract};
+    check( (to_pay1.quantity.symbol == max_asset1.symbol) && 
+      (to_pay2.quantity.symbol == max_asset2.symbol), "incorrect symbol");
+    check( (to_pay1.quantity.amount <= max_asset1.amount) && 
+      (to_pay2.quantity.amount <= max_asset2.amount), "available is less than expected");
 
-    check( to_pay1.quantity <= max_asset1, "available is less than expected"); // <= operator checks
-    check( to_pay2.quantity <= max_asset2, "available is less than expected"); // symbol identity
     add_signed_ext_balance(user, -to_pay1);
     add_signed_ext_balance(user, -to_pay2);
-
     (to_add.amount > 0)? add_balance(user, to_add, user) : sub_balance(user, -to_add);
     require_recipient(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
@@ -142,7 +143,6 @@ extended_asset evolutiondex::process_exch(symbol_code pair_token,
     if ((token->pool1.get_extended_symbol() == ext_asset_in.get_extended_symbol()) && 
         (token->pool2.quantity.symbol == min_expected.symbol)) {
         in_first = true;
-    // testear estos mandando desde otros contratos.
     } else if ((token->pool1.quantity.symbol == min_expected.symbol) &&
                (token->pool2.get_extended_symbol() == ext_asset_in.get_extended_symbol())) {
         in_first = false;
@@ -176,7 +176,6 @@ extended_asset evolutiondex::process_exch(symbol_code pair_token,
     return ext_asset_out;
 }
 
-// details has the structure "EVOTOKN,min_expected_asset,memo"
 void evolutiondex::memoexchange(name user, extended_asset ext_asset_in, string_view details){
     auto parts = split(details, ",");
     check(parts.size() >= 2 && parts.size() <= 3, "Expected format 'EVOTOKEN,min_expected_asset,memo'");
@@ -220,7 +219,6 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
     add_signed_ext_balance(user, -ext_asset2);
 }
 
-// cambiar symbol por symbol_code 
 void evolutiondex::changefee(symbol_code pair_token, int newfee) {
     check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), pair_token.raw() );
