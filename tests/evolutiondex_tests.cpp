@@ -234,7 +234,7 @@ extended_asset extend(asset to_extend) {
 
 BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
 
-BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
+BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
@@ -265,8 +265,54 @@ BOOST_FIXTURE_TEST_CASE( evo_tests, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( fc::json::to_string(alice_evo_balance, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ), 
     fc::json::to_string(bal, fc::time_point(fc::time_point::now() + abi_serializer_max_time) ) );
 
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("to_buy amount must be positive"), 
+      addliquidity( N(alice), asset::from_string("-5.0000 EVO"), 
+      asset::from_string("0.5000 EOS"), asset::from_string("5000.0000 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("assets must be nonnegative"), 
+      addliquidity( N(alice), asset::from_string("2.0000 EVO"), 
+      asset::from_string("-0.3000 EOS"), asset::from_string("30.0000 NOICE")));
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      addliquidity( N(alice), asset::from_string("5.0000 EVO"), 
+      asset::from_string("0.5000 EOS"), asset::from_string("5000.0000 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      addliquidity( N(alice), asset::from_string("2.0000 EVO"), 
+      asset::from_string("0.0000 EOS"), asset::from_string("20.0000 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("incorrect symbol"), 
+      addliquidity( N(alice), asset::from_string("3.0000 EVO"), 
+      asset::from_string("0.3000 ECOS"), asset::from_string("30.0001 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), 
+      addliquidity( N(alice), asset::from_string("1000000000000.0000 EVO"), 
+      asset::from_string("1000000000000.0000 EOS"), asset::from_string("20000000000000.0000 VOICE")));
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("to_sell amount must be positive"), 
+      remliquidity( N(alice), asset::from_string("-5.0000 EVO"), 
+      asset::from_string("0.5000 EOS"), asset::from_string("5000.0000 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("assets must be nonnegative"), 
+      remliquidity( N(alice), asset::from_string("3.0000 EVO"), 
+      asset::from_string("-0.3000 EOS"), asset::from_string("30.0001 NOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      remliquidity( N(alice), asset::from_string("1.0000 EVO"), 
+      asset::from_string("0.1001 EOS"), asset::from_string("10.0000 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      remliquidity( N(alice), asset::from_string("3.0000 EVO"), 
+      asset::from_string("0.3000 EOS"), asset::from_string("30.0001 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("incorrect symbol"), 
+      remliquidity( N(alice), asset::from_string("3.0000 EVO"), 
+      asset::from_string("0.3000 EOS"), asset::from_string("30.0001 NOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("overdrawn balance"), 
+      remliquidity( N(alice), asset::from_string("1000000000000.0000 EVO"), 
+      asset::from_string("0.0000 EOS"), asset::from_string("0.0000 VOICE")));
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("computation overflow"), 
+      addliquidity( N(alice), asset::from_string("46116860184273.8791 EVO"), 
+      asset::from_string("1.0000 EOS"), asset::from_string("1.0000 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("computation underflow"), 
+      remliquidity( N(alice), asset::from_string("46116860184273.8791 EVO"), 
+      asset::from_string("1.0000 EOS"), asset::from_string("1.0000 VOICE")));
+
     addliquidity( N(alice), asset::from_string("50.0000 EVO"), 
-      asset::from_string("10000000.0000 EOS"), asset::from_string("10000000.0000 VOICE") );
+      asset::from_string("5.0050 EOS"), asset::from_string("500.5000 VOICE") );
 
     produce_blocks();
 
@@ -723,6 +769,8 @@ BOOST_FIXTURE_TEST_CASE( evo_tests_asserts, evolutiondex_tester ) try {
 
     BOOST_REQUIRE_EQUAL( success(), withdraw( N(alice), N(bob),
       extend(asset::from_string("999.9998 EOS")) ) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("quantity must be positive"), withdraw( N(alice), N(bob),
+      extend(asset::from_string("-0.0002 EOS")) ));
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), withdraw( N(alice), N(bob),
       extend(asset::from_string("0.0002 EOS")) ));
 

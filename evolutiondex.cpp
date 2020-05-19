@@ -8,7 +8,8 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
     require_auth( payer );
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
-    const auto& acnt_balance = index.find( make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
+    const auto& acnt_balance = index.find( 
+      make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
     if( acnt_balance == index.end() ) {
         acnts.emplace( payer, [&]( auto& a ){
             a.balance = extended_asset{0, ext_symbol};
@@ -100,7 +101,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     check( to_add.is_valid(), "invalid asset");
     stats statstable( get_self(), to_add.symbol.code().raw() );
     const auto& token = statstable.find( to_add.symbol.code().raw() );
-    check ( token != statstable.end(), "token does not exist" );
+    check ( token != statstable.end(), "pair token does not exist" );
     auto A = token-> supply.amount;
     auto P1 = token-> pool1.quantity.amount;
     auto P2 = token-> pool2.quantity.amount;
@@ -111,9 +112,9 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, P2, A, fee),
       token->pool2.quantity.symbol}, token->pool2.contract};
     check( (to_pay1.quantity.symbol == max_asset1.symbol) && 
-      (to_pay2.quantity.symbol == max_asset2.symbol), "incorrect symbol");
+           (to_pay2.quantity.symbol == max_asset2.symbol), "incorrect symbol");
     check( (to_pay1.quantity.amount <= max_asset1.amount) && 
-      (to_pay2.quantity.amount <= max_asset2.amount), "available is less than expected");
+           (to_pay2.quantity.amount <= max_asset2.amount), "available is less than expected");
 
     add_signed_ext_balance(user, -to_pay1);
     add_signed_ext_balance(user, -to_pay2);
@@ -223,7 +224,7 @@ void evolutiondex::changefee(symbol_code pair_token, int newfee) {
     check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), pair_token.raw() );
     const auto& token = statstable.find( pair_token.raw() );
-    check ( token != statstable.end(), "token does not exist" );
+    check ( token != statstable.end(), "pair token does not exist" );
     require_auth(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.fee = newfee;
