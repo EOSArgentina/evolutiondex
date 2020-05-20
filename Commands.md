@@ -53,11 +53,17 @@ There two methods. The first one is to do a transfer to the contract with a memo
 
     cleos push action eosio.token '["YOUR_ACCOUNT", "evolutiondex", "1.0000 EOS", "exchange: EOSPESO, 0.1000 PESO, memo for the transfer]' -p YOUR_ACCOUNT
 
-The other method operates between funds already deposited in the contract. - The structure
+The other method operates between funds already deposited in the contract. The structure
 of the input is account, evotoken, extended_asset to pay (exact), asset to receive (limiting).
 
     cleos push action evolutiondex exchange '["YOUR_ACCOUNT", "EOSPESO", 
     {"contract":"eosio.token", "quantity":"1.0000 EOS"}, "0.1000 PESO"]' -p YOUR_ACCOUNT
+
+It is also possible to set the exact amount to obtain and limit the amount to pay.
+To do this, use negative amounts. The following example means that you want to receive exactly 0.1000 PESO and pay at most 1.0000 EOS. 
+
+    cleos push action evolutiondex exchange '["YOUR_ACCOUNT", "EOSPESO", 
+    {"contract":"eosio.token", "quantity":"-0.1000 PESO"}, "-1.0000 EOS"]' -p YOUR_ACCOUNT
 
 Transfer your evotokens to another account:
 

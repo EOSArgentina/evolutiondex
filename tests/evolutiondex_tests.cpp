@@ -472,6 +472,35 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     new_vec = system_balance(EVO.value);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+    
+    old_total = total(); 
+    old_vec = system_balance(EVO.value);
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      exchange( N(alice), EVO, extend(asset::from_string("-1.0000 EOS")), 
+      asset::from_string("-0.1068 VOICE")) );
+    BOOST_REQUIRE_EQUAL( success(), exchange( N(alice), EVO, 
+      extend(asset::from_string("-1.0000 EOS")), asset::from_string("-0.1069 VOICE")) );
+    new_total = total();
+    new_vec = system_balance(EVO.value);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
+      exchange( N(alice), EVO, extend(asset::from_string("-0.0000 EOS")), 
+      asset::from_string("-0.1068 VOICE")) );
+
+    old_total = total(); 
+    old_vec = system_balance(EVO.value);
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+      exchange( N(bob), EVO, extend(asset::from_string("-13.0001 VOICE")), 
+      asset::from_string("-122.0328 EOS")) );
+    BOOST_REQUIRE_EQUAL( success(), exchange( N(bob), EVO, 
+      extend(asset::from_string("-13.0001 VOICE")), asset::from_string("-122.0329 EOS")) );
+    new_total = total();
+    new_vec = system_balance(EVO.value);
+    BOOST_REQUIRE_EQUAL(old_total == new_total, true);
+    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
+
 } FC_LOG_AND_RETHROW()
 
 
