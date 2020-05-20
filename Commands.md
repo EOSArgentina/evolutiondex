@@ -2,7 +2,7 @@
 
 First, let us describe the single actions of the smart contract.
 
-Open a channel in the contract: - this channel will store your trading tokens. You need to create one channel for each token you plan to trade. The second input below is the ram payer, and the authorizer must be the ram payer. -
+Open a channel in the contract. This channel will store your trading tokens. You need to create one channel for each token you plan to trade. The second input below is the ram payer, and the authorizer must be the ram payer.
 
     cleos push action evolutiondex openext '["YOUR_ACCOUNT", "YOUR_ACCOUNT", {"contract":"eosio.token", "sym":"4,EOS"}]' -p YOUR_ACCOUNT
 
@@ -12,7 +12,6 @@ Open a channel for the second token you wish to trade in evodex:
 
 Close the contract's channel for a specific token. In case there are funds there,
 it returns them to the account "TO".
-. -
 
     cleos push action evolutiondex closeext '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "sym":"4,EOS"}, "memo"]' -p YOUR_ACCOUNT
 
@@ -30,7 +29,7 @@ Withdraw funds from your opened channels, to the account "TO":
 
     cleos push action evolutiondex withdraw '["YOUR_ACCOUNT", "TO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, "memo"]' -p YOUR_ACCOUNT
 
-Open the EOS/PESO evotoken: - add liquidity to the pair pool, set the initial fee for the trading pair and the fee controller -
+Create the EOS/PESO evotoken. Set the initial liquidity, the initial fee for the trading pair and the fee controller.
 
     cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, {"contract":"pesocontract", "quantity":"1.0000 PESO"}, 10, "FEE_CONTROLLER"]' -p YOUR_ACCOUNT
 
@@ -38,12 +37,13 @@ Check your evotokens balance:
 
     cleos get table evolutiondex YOUR_ACCOUNT accounts
 
-Add more liquidity to a pool: - set the exact amount of evotoken to obtain, in this case 1.0000 EOSPESO, and the maximum you are willing to pay of each token of the pair. -
+Add more liquidity to a pool. Set the exact amount of evotoken to obtain, in this case 
+1.5000 EOSPESO, and the maximum you are willing to pay of each token of the pair.
 
-    cleos push action evolutiondex addliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", 
+    cleos push action evolutiondex addliquidity '["YOUR_ACCOUNT", "1.5000 EOSPESO", 
     "2.0000 EOS", "2.0000 PESO"]' -p YOUR_ACCOUNT
 
-Sell your evotokens and retire liquidity: - the amount of evotoken is exact and the other two are minima required. -
+Sell your evotokens and retire liquidity. The amount of evotoken is exact and the other two are minima required.
 
     cleos push action evolutiondex remliquidity '["YOUR_ACCOUNT", "1.0000 EOSPESO", 
     "0.1000 PESO", "1.0000 EOS"]' -p YOUR_ACCOUNT
@@ -121,9 +121,9 @@ where the file addliquidity.json contains:
             "authorization": [{"actor": "YOUR_ACCOUNT","permission": "active"}],
             "data": {
                 "user": "YOUR_ACCOUNT",
-                "to_buy": "1.0000 EOSPESO",
-                "max_asset1": "2.0000 PESO",
-                "max_asset2": "2.0000 EOS"
+                "to_buy": "1.5000 EOSPESO",
+                "max_asset1": "2.0000 EOS",
+                "max_asset2": "2.0000 PESO",                
             }
         },{
             "account": "evolutiondex",
