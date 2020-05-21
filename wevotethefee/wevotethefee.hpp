@@ -9,15 +9,15 @@
 using namespace eosio;
 using namespace std;
 
-
 class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
    public:
 
       using contract::contract;
-      [[eosio::action]] void votefee(name user, symbol sym, int fee_index_voted);
-      [[eosio::action]] void openfeetable(name user, symbol sym);
-      [[eosio::action]] void closevote(name user, symbol sym);
-      [[eosio::action]] void updatefee(symbol sym);
+      [[eosio::action]] void votefee(name user, symbol_code token, int fee_index_voted);
+      [[eosio::action]] void openfeetable(name user, symbol_code token);
+      [[eosio::action]] void closevote(name user, symbol_code token);
+      [[eosio::action]] void closefeetable(name user, symbol_code token);
+      [[eosio::action]] void updatefee(symbol_code token);
       [[eosio::on_notify("evolutiondex::addliquidity")]] void addliquidity(name user, asset to_buy, 
         extended_asset max_ext_asset1, extended_asset max_ext_asset2);
       [[eosio::on_notify("evolutiondex::remliquidity")]] void remliquidity(name user, asset to_sell,
@@ -27,24 +27,23 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
 
    private:
 
-      const vector <int> fee_vector{1,2,4,8,16,32,64,128,256}; 
-
-      int median(symbol sym);
+      const vector <int> fee_vector{1,2,3,5,7,10,15,20,30,50,75,100,150,200,300};
+      int median(symbol_code token);
       int get_index(int number);
-      void addvote(symbol sym, int fee_index, int64_t amount);
+      void addvote(symbol_code token, int fee_index, int64_t amount);
       void add_balance(name user, asset to_add);
-      asset bring_balance(name user, symbol sym);
+      asset bring_balance(name user, symbol_code token);
 
       struct [[eosio::table]] feeaccount {
-         symbol sym;
+         symbol_code token;
          int fee_index_voted;
-         uint64_t primary_key()const { return sym.code().raw(); }
+         uint64_t primary_key()const { return token.raw(); }
       };
 
       struct [[eosio::table]] feetable {
-         symbol sym;
+         symbol_code token;
          vector <int64_t> votes;
-         uint64_t primary_key()const { return sym.code().raw(); }
+         uint64_t primary_key()const { return token.raw(); }
       };
 
       typedef eosio::multi_index<"feeaccount"_n, feeaccount> feeaccounts;
@@ -55,5 +54,4 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
          uint64_t primary_key()const { return balance.symbol.code().raw(); }
       };
       typedef eosio::multi_index< "accounts"_n, account > accounts;
-
 };
