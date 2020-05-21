@@ -247,7 +247,6 @@ BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
-    // eos and voice both live in eosio.token
     openext( N(alice), N(alice), extended_symbol{EOS4, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{VOICE4, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{TUSD4, N(eosio.token)});
@@ -323,6 +322,13 @@ BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
     exchange( N(alice), EVO, extend(asset::from_string("0.1000 EOS")), asset::from_string("4.8500 VOICE"));
     exchange( N(alice), EVO, extend(asset::from_string("0.0001 EOS")), asset::from_string("0.0009 VOICE"));
 
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
+      exchange( N(alice), EVO, extend(asset::from_string("-10000000.0000 EOS")), 
+      asset::from_string("0.0001 VOICE")) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
+      exchange( N(alice), EVO, extend(asset::from_string("-99999919.0299 VOICE")), 
+      asset::from_string("0.0000 EOS")) );
+
     auto new_vec = system_balance(EVO.value);
     vector <int64_t> final_system_balance = {10000073864, 999999190299, 100000328128};
     BOOST_REQUIRE_EQUAL(final_system_balance == new_vec, true);
@@ -357,7 +363,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
-    // eos and voice both live in eosio.token
     openext( N(alice), N(alice), extended_symbol{EOS4, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{VOICE4, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{TUSD4, N(eosio.token)});
@@ -486,7 +491,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
-      exchange( N(alice), EVO, extend(asset::from_string("-0.0000 EOS")), 
+      exchange( N(alice), EVO, extend(asset::from_string("0.0000 EOS")), 
       asset::from_string("-0.1068 VOICE")) );
 
     old_total = total(); 
@@ -518,7 +523,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
-    // eos and voice both live in eosio.token
     openext( N(alice), N(alice), extended_symbol{EOS4, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{VOICE4, N(eosio.token)});
     openext( N(alice), N(alice), extended_symbol{TUSD4, N(eosio.token)});
