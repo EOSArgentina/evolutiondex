@@ -24,7 +24,7 @@ void evolutiondex::transfer( const name& from, const name& to, const asset& quan
 
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
-    if (to == get_self()) deposit(from, to, quantity, memo); // line added to code from eosio.token
+    if (to == get_self()) ontransfer(from, to, quantity, memo); // line added to code from eosio.token
 }
 
 void evolutiondex::sub_balance( const name& owner, const asset& value ) {
