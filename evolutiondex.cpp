@@ -130,6 +130,10 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
 
 void evolutiondex::exchange( name user, symbol_code pair_token, 
   extended_asset ext_asset_in, asset min_expected) {
+    require_auth(user);
+    check( ((ext_asset_in.quantity.amount > 0) && (min_expected.amount >= 0)) ||
+           ((ext_asset_in.quantity.amount < 0) && (min_expected.amount <= 0)), 
+           "ext_asset_in must be nonzero and min_expected must have same sign or be zero");
     auto ext_asset_out = process_exch(pair_token, ext_asset_in, min_expected);
     add_signed_ext_balance(user, -ext_asset_in);
     add_signed_ext_balance(user, ext_asset_out);

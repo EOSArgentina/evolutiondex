@@ -234,7 +234,7 @@ extended_asset extend(asset to_extend) {
 
 BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
 
-BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
+BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
@@ -324,10 +324,22 @@ BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
       exchange( N(alice), EVO, extend(asset::from_string("-10000000.0000 EOS")), 
-      asset::from_string("0.0001 VOICE")) );
+      asset::from_string("-0.0001 VOICE")) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
       exchange( N(alice), EVO, extend(asset::from_string("-99999919.0299 VOICE")), 
       asset::from_string("0.0000 EOS")) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg(
+      "ext_asset_in must be nonzero and min_expected must have same sign or be zero"), 
+      exchange( N(alice), EVO, extend(asset::from_string("2.0000 VOICE")), 
+      asset::from_string("-0.1000 EOS")) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg(
+      "ext_asset_in must be nonzero and min_expected must have same sign or be zero"), 
+      exchange( N(alice), EVO, extend(asset::from_string("-2.0000 RICE")), 
+      asset::from_string("0.1000 REOS")) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg(
+      "ext_asset_in must be nonzero and min_expected must have same sign or be zero"), 
+      exchange( N(alice), EVO, extend(asset::from_string("0.0000 EOS")), 
+      asset::from_string("-0.1000 VOICE")) );
 
     auto new_vec = system_balance(EVO.value);
     vector <int64_t> final_system_balance = {10000073864, 999999190299, 100000328128};
@@ -345,7 +357,6 @@ BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(final_system_balance == new_vec, true);
     BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999875884);
     BOOST_REQUIRE_EQUAL(balance(N(alice),1), 999995784721);
-
 } FC_LOG_AND_RETHROW()
 
 
@@ -489,10 +500,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     new_vec = system_balance(EVO.value);
     BOOST_REQUIRE_EQUAL(old_total == new_total, true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
-
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("invalid parameters"), 
-      exchange( N(alice), EVO, extend(asset::from_string("0.0000 EOS")), 
-      asset::from_string("-0.1068 VOICE")) );
 
     old_total = total(); 
     old_vec = system_balance(EVO.value);
