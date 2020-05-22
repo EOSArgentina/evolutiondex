@@ -20,7 +20,9 @@ const api = new Api({ rpc, signatureProvider, textDecoder: new TextDecoder(), te
         }],
         data: {
             user: 'ali',
+            to: 'ali',
             to_withdraw: {"contract":"eosio.token", "quantity":"0.0001 EOS"},
+            memo: '',
         },
         }]
     }, {
