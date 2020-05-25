@@ -183,11 +183,12 @@ extended_asset evolutiondex::process_exch(symbol_code pair_token,
 
 void evolutiondex::memoexchange(name user, extended_asset ext_asset_in, string_view details){
     auto parts = split(details, ",");
-    check(parts.size() >= 2 && parts.size() <= 3, "Expected format 'EVOTOKEN,min_expected_asset,memo'");
+    check(parts.size() >= 2, "Expected format 'EVOTOKEN,min_expected_asset,optional memo'");
 
     auto pair_token   = symbol_code(parts[0]);
     auto min_expected = asset_from_string(parts[1]);
-    auto memo         = std::string(parts.size() == 3 ? parts[2] : "");
+    auto second_comma_pos = details.find(",", 1 + details.find(","));
+    auto memo = (second_comma_pos == string::npos)? "" : details.substr(1 + second_comma_pos);
 
     check(min_expected.amount >= 0, "min_expected must be expressed with a positive amount");
     auto ext_asset_out = process_exch(pair_token, ext_asset_in, min_expected);
