@@ -119,13 +119,13 @@ public:
           ( "memo", "" )
         );
     }
-    action_result inittoken( name user, symbol new_symbol, extended_asset ext_asset1,
-      extended_asset ext_asset2, int initial_fee, name fee_contract){
+    action_result inittoken( name user, symbol new_symbol, extended_asset initial_pool1,
+      extended_asset initial_pool2, int initial_fee, name fee_contract){
         return push_action( N(evolutiondex), user, N(inittoken), mvo()
           ( "user", user)
           ("new_symbol", new_symbol)
-          ("ext_asset1", ext_asset1)
-          ("ext_asset2", ext_asset2) 
+          ("initial_pool1", initial_pool1)
+          ("initial_pool2", initial_pool2) 
           ("initial_fee", initial_fee)
           ("fee_contract", fee_contract)
         );

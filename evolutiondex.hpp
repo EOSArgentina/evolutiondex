@@ -18,7 +18,7 @@ namespace evolution {
 
          using contract::contract;
          [[eosio::action]] void inittoken(name user, symbol new_symbol, 
-           extended_asset ext_asset1, extended_asset ext_asset2, 
+           extended_asset initial_pool1, extended_asset initial_pool2, 
            int initial_fee, name fee_contract);
          [[eosio::on_notify("*::transfer")]] void ontransfer(name from, name to, asset quantity, string memo);
          [[eosio::action]] void openext( const name& user, const name& payer, const extended_symbol& ext_symbol);

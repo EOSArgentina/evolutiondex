@@ -196,15 +196,15 @@ void evolutiondex::memoexchange(name user, extended_asset ext_asset_in, string_v
       std::make_tuple( get_self(), user, ext_asset_out.quantity, std::string(memo)) ).send();
 }
 
-void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset ext_asset1,
-extended_asset ext_asset2, int initial_fee, name fee_contract)
+void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset initial_pool1,
+extended_asset initial_pool2, int initial_fee, name fee_contract)
 {
     require_auth( user );
-    check((ext_asset1.quantity.amount > 0) && (ext_asset2.quantity.amount > 0), "Both assets must be positive");
-    check((ext_asset1.quantity.amount < INIT_MAX) && (ext_asset2.quantity.amount < INIT_MAX), "Initial amounts must be less than 10^15");
-    int128_t geometric_mean = sqrt(int128_t(ext_asset1.quantity.amount) * int128_t(ext_asset2.quantity.amount));
+    check((initial_pool1.quantity.amount > 0) && (initial_pool2.quantity.amount > 0), "Both assets must be positive");
+    check((initial_pool1.quantity.amount < INIT_MAX) && (initial_pool2.quantity.amount < INIT_MAX), "Initial amounts must be less than 10^15");
+    int128_t geometric_mean = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
-    check( ext_asset1.get_extended_symbol() != ext_asset2.get_extended_symbol(), "extended symbols must be different");
+    check( initial_pool1.get_extended_symbol() != initial_pool2.get_extended_symbol(), "extended symbols must be different");
     stats statstable( get_self(), new_token.symbol.code().raw() );
     const auto& token = statstable.find( new_token.symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
@@ -214,15 +214,15 @@ extended_asset ext_asset2, int initial_fee, name fee_contract)
         a.supply = new_token;
         a.max_supply = asset{MAX,new_token.symbol};
         a.issuer = get_self();
-        a.pool1 = ext_asset1;
-        a.pool2 = ext_asset2;
+        a.pool1 = initial_pool1;
+        a.pool2 = initial_pool2;
         a.fee = initial_fee;
         a.fee_contract = fee_contract;
     } );
 
     add_balance(user, new_token, user);
-    add_signed_ext_balance(user, -ext_asset1);
-    add_signed_ext_balance(user, -ext_asset2);
+    add_signed_ext_balance(user, -initial_pool1);
+    add_signed_ext_balance(user, -initial_pool2);
 }
 
 void evolutiondex::changefee(symbol_code pair_token, int newfee) {
