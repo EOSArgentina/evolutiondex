@@ -2,45 +2,53 @@
 
 ---
 spec_version: "0.2.0"
+
 title: Open extended Balance
+
 summary: 'Open a zero quantity extended balance for {{nowrap user}}'
 ---
 
 {{ram_payer}} agrees to establish a zero quantity extended balance for {{user}} 
-for the {{ext_symbol}} extended balance. 
+for the {{ext_symbol}} extended symbol. 
 
-If {{user}} does not have an extended balance for {{ext_symbol}}, {{ram_payer}} will be designated as the RAM payer of the {{ext_symbol}} token extended balance for {{user}}. As a result, RAM will be deducted from {{ram_payer}}’s resources to create the necessary records.
+If {{user}} does not have an extended balance for {{ext_symbol}}, {{ram_payer}} will be designated as the RAM payer of {{user}}'s extended balance for {{ext_symbol}}. As a result, RAM will be deducted from {{ram_payer}}’s resources to create the necessary records.
 
+The authorization of {{ram_payer}} is required.
 
 <h1 class="contract">closeext</h1>
 
 ---
 spec_version: "0.2.0"
+
 title: Close Extended Balance
+
 summary: 'Close {{nowrap user}}’s extended balance'
 ---
 
-{{user}} agrees to close their extended balance for {{ext_symbol}}.
+{{user}} agree to close their extended balance for {{ext_symbol}}.
 
 If the extended balance is nonzero, it will be transfered to {{to}} 
 before closing it, with a memo equal to {{memo}}.
 This transfer action corresponds to the contract 
 {{extended_symbol_to_contract ext_symbol}}. In order to function properly,
-it is necessary that the contract {{extended_symbol_to_contract ext_symbol}} permanently has a transfer action that satisfies the conditions (1), (2), (6) of the present contract's transfer action.
+it is necessary that the contract of {{ext_symbol}} permanently has a transfer action that satisfies the conditions (1), (2), (6) of the present contract's transfer action.
 
-RAM will be refunded to the RAM payer of the {{ext_symbol}} token balance for {{user}}.
+RAM will be refunded to the RAM payer of {{user}}'s extended balance for {{ext_symbol}}.
 
+The authorization of {{user}} is required.
 
 <h1 class="contract">ontransfer</h1>
 
 ---
 spec_version: "0.2.0"
+
 title: On transfer
+
 summary: 'Deposit or exchange on a transfer from {{nowrap user}}'
 ---
 
 This action is executed as a response to a notification of a transfer action
-with the content {from, to, quantity, memo}. 
+with the input {{from}}, {{to}}, {{quantity}}, {{memo}} in that order. 
 
 The default response is to deposit {{quantity}} to {{from}}'s extended balance 
 for the extended symbol formed by the tranfer's contract and the symbol
@@ -53,19 +61,20 @@ the subsequent content of {{memo}} whenever it is possible.
 If {{memo}} starts with "exchange:", the subsequent content of the memo is expected
 to have the form "EVOTOKEN,min_expected_asset,optional memo".
 An exchange operation will be processed with this data, following the same
-conversion rules as in the exchange action. If the output asset is at least equal
+conversion rules as in the exchange action for the input {{from}}, {{EVOTOKEN}}, {{quantity}}, {{min_expected_asset}}. If the output asset is at least equal
 to {{min_expected_asset}}, it will be transfered from this contract
 to {{user}}, with {{optional memo}} as memo.
 
-In order to function properly, it is necessary that the original tranfer's contract
-permanently has a transfer action that satisfies the conditions (1), (2), (6) of the present contract's transfer action.
+In order to function properly, it is necessary that both pool contracts associated to {{EVOTOKEN}}, permanently have a transfer action that satisfies the conditions (1), (2), (6) of the present contract's transfer action.
 
 
 <h1 class="contract">withdraw</h1>
 
 ---
 spec_version: "0.2.0"
+
 title: Withdraw
+
 summary: 'Withdraw funds from extended balance'
 ---
 {{user}} agree to withdraw the extended balance {{to_withdraw}} from their account.
@@ -77,7 +86,9 @@ In order to function properly, it is necessary that {{extended_symbol_to_contrac
 
 ---
 spec_version: "0.2.0"
+
 title: Initialize token
+
 summary: 'Initializes an evotoken by setting initial pair of token pools'
 ---
 
@@ -89,7 +100,9 @@ In order to function properly, it is necessary that both {{extended_symbol_to_co
 
 ---
 spec_version: "0.2.0"
+
 title: Add liquidity
+
 summary: '{{nowrap user}} buys an evotoken by adding liquidity to pools'
 ---
 
@@ -114,7 +127,9 @@ those indicated by {{user}}.
 
 ---
 spec_version: "0.2.0"
+
 title: Remove liquidity
+
 summary: '{{nowrap user}} sells an evotoken, removing liquidity from pools'
 ---
 {{user}} agrees to sell the asset {{to_sell}} by receiving at least {{min_asset1}} and {{min_asset2}} to be added to {{user}}'s extended balances and removed from the token
@@ -139,12 +154,14 @@ those indicated by {{user}}.
 
 ---
 spec_version: "0.2.0"
+
 title: Exchange
+
 summary: 'Exchange token through a specific pair'
 ---
 
-{{user}} agrees to susbstract the exact amount {{ext_asset_in}} and to add
-at least {{min_expected}} to its extended balances. 
+{{user}} agree to susbstract the exact amount {{ext_asset_in}} and to add
+at least {{min_expected}} to their extended balances. 
 At the same time these (possibly negative) extended assets will be respectively added to and substracted from the corresponding pools associated to the token {{through}}.
 
 The exact amount (possibly negative) to be added to {{users}}'s extended balance is computed as x + y, where
@@ -165,7 +182,9 @@ that indicated by {{user}}.
 
 ---
 spec_version: "0.2.0"
+
 title: Change fee
+
 summary: 'Change the fee value associated to a pair'
 ---
 The account fee_contract associated to the token {{pair_token}} authorizes
@@ -175,12 +194,15 @@ to change the fee parameter associated to the same token, to the value {{newfee}
 
 ---
 spec_version: "0.2.0"
+
 title: Close Token Balance
+
 summary: 'Close {{nowrap owner}}’s zero quantity balance'
+
 icon: @ICON_BASE_URL@/@TOKEN_ICON_URI@
 ---
 
-{{owner}} agrees to close their zero quantity balance for the {{symbol_to_symbol_code symbol}} token.
+{{owner}} agree to close their zero quantity balance for the {{symbol_to_symbol_code symbol}} token.
 
 RAM will be refunded to the RAM payer of the {{symbol_to_symbol_code symbol}} token balance for {{owner}}.
 
@@ -189,7 +211,9 @@ RAM will be refunded to the RAM payer of the {{symbol_to_symbol_code symbol}} to
 
 ---
 spec_version: "0.2.0"
+
 title: Open Token Balance
+
 summary: 'Open a zero quantity balance for {{nowrap owner}}'
 ---
 
@@ -202,7 +226,9 @@ If {{owner}} does not have a balance for {{symbol_to_symbol_code symbol}}, {{ram
 
 ---
 spec_version: "0.2.0"
+
 title: Transfer Tokens
+
 summary: 'Send {{nowrap quantity}} from {{nowrap from}} to {{nowrap to}}'
 ---
 
