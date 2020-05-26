@@ -1,4 +1,5 @@
 <h1 class="contract">openext</h1>
+
 ---
 spec_version: "0.2.0"
 title: Open extended Balance
@@ -12,6 +13,7 @@ If {{user}} does not have an extended balance for {{ext_symbol}}, {{ram_payer}} 
 
 
 <h1 class="contract">closeext</h1>
+
 ---
 spec_version: "0.2.0"
 title: Close Extended Balance
@@ -30,6 +32,7 @@ RAM will be refunded to the RAM payer of the {{ext_symbol}} token balance for {{
 
 
 <h1 class="contract">ontransfer</h1>
+
 ---
 spec_version: "0.2.0"
 title: On transfer
@@ -59,6 +62,7 @@ permanently has a transfer action that satisfies the conditions (1), (2), (6) of
 
 
 <h1 class="contract">withdraw</h1>
+
 ---
 spec_version: "0.2.0"
 title: Withdraw
@@ -70,6 +74,7 @@ In order to function properly, it is necessary that {{extended_symbol_to_contrac
 
 
 <h1 class="contract">inittoken</h1>
+
 ---
 spec_version: "0.2.0"
 title: Initialize token
@@ -81,6 +86,7 @@ summary: 'Initializes an evotoken by setting initial pair of token pools'
 In order to function properly, it is necessary that both {{extended_symbol_to_contract initial_pool1}} and  {{extended_symbol_to_contract initial_pool2 }} permanently have a transfer action that satisfies the conditions (1), (2), (6) of the present contract's transfer action.
 
 <h1 class="contract">addliquidity</h1>
+
 ---
 spec_version: "0.2.0"
 title: Add liquidity
@@ -105,6 +111,7 @@ The operation is executed only if the amounts to be paid by {{user}} are at most
 those indicated by {{user}}. 
 
 <h1 class="contract">remliquidity</h1>
+
 ---
 spec_version: "0.2.0"
 title: Remove liquidity
@@ -129,6 +136,7 @@ those indicated by {{user}}.
 
 
 <h1 class="contract">exchange</h1>
+
 ---
 spec_version: "0.2.0"
 title: Exchange
@@ -154,6 +162,7 @@ The operation is executed only if the extended asset to be added to {{user}} is 
 that indicated by {{user}}. 
 
 <h1 class="contract">changefee</h1>
+
 ---
 spec_version: "0.2.0"
 title: Change fee
@@ -163,6 +172,7 @@ The account fee_contract associated to the token {{pair_token}} authorizes
 to change the fee parameter associated to the same token, to the value {{newfee}}.
 
 <h1 class="contract">close</h1>
+
 ---
 spec_version: "0.2.0"
 title: Close Token Balance
@@ -176,6 +186,7 @@ RAM will be refunded to the RAM payer of the {{symbol_to_symbol_code symbol}} to
 
 
 <h1 class="contract">open</h1>
+
 ---
 spec_version: "0.2.0"
 title: Open Token Balance
@@ -188,6 +199,7 @@ If {{owner}} does not have a balance for {{symbol_to_symbol_code symbol}}, {{ram
 
 
 <h1 class="contract">transfer</h1>
+
 ---
 spec_version: "0.2.0"
 title: Transfer Tokens
