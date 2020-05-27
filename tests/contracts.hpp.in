@@ -22,7 +22,7 @@ struct contracts {
    static std::vector<uint8_t> evolutiondex_wasm() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/../evolutiondex.wasm"); }
    static std::vector<char>    evolutiondex_abi() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/../evolutiondex.abi"); }
 
-   static std::vector<uint8_t> wesetyourfee_wasm() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/../wesetyourfee.wasm"); }
-   static std::vector<char>    wesetyourfee_abi() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/../wesetyourfee.abi"); }
+   static std::vector<uint8_t> badtoken_wasm() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/../badtoken.wasm"); }
+   static std::vector<char>    badtoken_abi() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/../badtoken.abi"); }
 }; 
 }} //ns eosio::testing

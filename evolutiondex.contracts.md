@@ -199,7 +199,6 @@ title: Close Token Balance
 
 summary: 'Close {{nowrap owner}}’s zero quantity balance'
 
-icon: @ICON_BASE_URL@/@TOKEN_ICON_URI@
 ---
 
 {{owner}} agree to close their zero quantity balance for the {{symbol_to_symbol_code symbol}} token.

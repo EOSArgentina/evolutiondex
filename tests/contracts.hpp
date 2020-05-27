@@ -22,7 +22,7 @@ struct contracts {
    static std::vector<uint8_t> evolutiondex_wasm() { return read_wasm("/home/sergio/Dropbox/eos/contracts/evo/tests/../evolutiondex.wasm"); }
    static std::vector<char>    evolutiondex_abi() { return read_abi("/home/sergio/Dropbox/eos/contracts/evo/tests/../evolutiondex.abi"); }
 
-   static std::vector<uint8_t> wesetyourfee_wasm() { return read_wasm("/home/sergio/Dropbox/eos/contracts/evo/tests/../wesetyourfee.wasm"); }
-   static std::vector<char>    wesetyourfee_abi() { return read_abi("/home/sergio/Dropbox/eos/contracts/evo/tests/../wesetyourfee.abi"); }
+   static std::vector<uint8_t> badtoken_wasm() { return read_wasm("/home/sergio/Dropbox/eos/contracts/evo/tests/../badtoken.wasm"); }
+   static std::vector<char>    badtoken_abi() { return read_abi("/home/sergio/Dropbox/eos/contracts/evo/tests/../badtoken.abi"); }
 }; 
 }} //ns eosio::testing
