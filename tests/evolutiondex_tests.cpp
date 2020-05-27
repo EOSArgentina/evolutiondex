@@ -302,6 +302,9 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("assets must be nonnegative"), 
       addliquidity( N(alice), asset::from_string("2.0000 EVO"), 
       asset::from_string("-0.3000 EOS"), asset::from_string("30.0000 NOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("assets must be nonnegative"), 
+      addliquidity( N(alice), asset::from_string("2.0000 EVO"), 
+      asset::from_string("0.3000 EOS"), asset::from_string("-30.0000 NOICE")));
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
       addliquidity( N(alice), asset::from_string("5.0000 EVO"), 
       asset::from_string("0.5000 EOS"), asset::from_string("5000.0000 VOICE")));
@@ -336,6 +339,9 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("assets must be nonnegative"), 
       remliquidity( N(alice), asset::from_string("3.0000 EVO"), 
       asset::from_string("-0.3000 EOS"), asset::from_string("30.0001 NOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("assets must be nonnegative"), 
+      remliquidity( N(alice), asset::from_string("3.0000 EVO"), 
+      asset::from_string("0.3000 EOS"), asset::from_string("-30.0001 NOICE")));
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
       remliquidity( N(alice), asset::from_string("1.0000 EVO"), 
       asset::from_string("0.1001 EOS"), asset::from_string("10.0000 VOICE")));
@@ -776,9 +782,15 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Both assets must be positive"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("-0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 10, N(foo)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Both assets must be positive"), inittoken( N(alice), EVO4, 
+      extend(asset::from_string("0.0001 EOS")),
+      extend(asset::from_string("-0.1000 VOICE")), 10, N(foo)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Initial amounts must be less than 10^15"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("100000000000.0001 VOICE")), 10, N(foo)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("Initial amounts must be less than 10^15"), inittoken( N(alice), EVO4, 
+      extend(asset::from_string("100000000000.0001 EOS")),
+      extend(asset::from_string("1.0001 VOICE")), 10, N(foo)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended symbols must be different"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 EOS")), 10, N(foo)) );
@@ -799,6 +811,9 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), ETUSD4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 501, N(foo)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), ETUSD4, 
+      extend(asset::from_string("0.0001 EOS")),
+      extend(asset::from_string("0.1000 VOICE")), -1, N(foo)) );
 
   // TRANSFER
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol not registered for this user,\
@@ -827,6 +842,7 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("pair token does not exist"), changefee(EOS, 500));
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("new fee out of reasonable range"), changefee(EVO, 501));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("new fee out of reasonable range"), changefee(EVO, -5));
     BOOST_REQUIRE_EQUAL( success(), changefee(EVO, 50) );
 } FC_LOG_AND_RETHROW()
 
