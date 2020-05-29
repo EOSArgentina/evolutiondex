@@ -5,5 +5,4 @@ In order to function properly, the external tokens to be operated by this contra
 * {{#if memo}} There is a memo attached to the transfer stating: {{memo}} {{/if}}
 * The account {{to}} is notified.
 
-The user agrees that the present contract is not responsible for errors occurred
-in the operation of a pool which involves a token not satisfying the above conditions.
+The user agrees that the present contract is not responsible for errors occurred in the operation of a pool which involves a token not satisfying the above conditions.
