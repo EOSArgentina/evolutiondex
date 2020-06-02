@@ -119,7 +119,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     add_signed_ext_balance(user, -to_pay1);
     add_signed_ext_balance(user, -to_pay2);
     (to_add.amount > 0)? add_balance(user, to_add, user) : sub_balance(user, -to_add);
-    require_recipient(token->fee_contract);
+    if (is_account(token->fee_contract)) require_recipient(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.supply += to_add;
       a.pool1 += to_pay1;
