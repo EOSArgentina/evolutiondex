@@ -852,6 +852,25 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("new fee out of reasonable range"), changefee(EVO, 501));
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("new fee out of reasonable range"), changefee(EVO, -5));
     BOOST_REQUIRE_EQUAL( success(), changefee(EVO, 50) );
+
+  // Notifications to fee_contract 
+
+    many_openext();
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("0.0002 EOS"), "");
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("0.0002 VOICE"), "");
+    BOOST_REQUIRE_EQUAL( success(), inittoken( N(bob), ETUSD4, 
+      extend(asset::from_string("0.0001 EOS")),
+      extend(asset::from_string("0.0001 VOICE")), 0, N(badtoken) ) ); 
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("notification received"), 
+      transfer( N(evolutiondex), N(bob), N(alice), asset::from_string("0.0001 ETUSD"), "") );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("notification received"), 
+      addliquidity( N(bob), asset::from_string("0.0001 ETUSD"), 
+      asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("notification received"), 
+      remliquidity( N(bob), asset::from_string("0.0001 ETUSD"), 
+      asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
+      
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
