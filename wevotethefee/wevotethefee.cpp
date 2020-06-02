@@ -22,11 +22,11 @@ void wevotethefee::updatefee(symbol_code token) {
       std::make_tuple( token, median(token))).send(); 
 }
 
-void wevotethefee::addliquidity(name user, asset to_buy, extended_asset max_ext_asset1, extended_asset max_ext_asset2){
+void wevotethefee::addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2){
     add_balance(user, to_buy);
 }
 
-void wevotethefee::remliquidity(name user, asset to_sell, extended_asset min_ext_asset1, extended_asset min_ext_asset2){
+void wevotethefee::remliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2){
     add_balance(user, -to_sell);
 }
 

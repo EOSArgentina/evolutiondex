@@ -153,7 +153,7 @@ public:
     action_result exchange( name user, symbol_code pair_token, extended_asset ext_asset_in, asset min_expected ) {
         return push_action( N(evolutiondex), user, N(exchange), mvo()
           ( "user", user )
-          ( "through", pair_token )
+          ( "pair_token", pair_token )
           ( "ext_asset_in", ext_asset_in )
           ( "min_expected", min_expected )
         );
@@ -383,7 +383,7 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
 // EXCHANGE
     BOOST_REQUIRE_EQUAL( error("missing authority of alice"), 
       push_action( N(evolutiondex), N(bob), N(exchange), mvo()
-          ( "user", N(alice))( "through", EVO )
+          ( "user", N(alice))( "pair_token", EVO )
           ( "ext_asset_in", extend(asset::from_string("1 EOS")) )
           ( "min_expected", asset::from_string("1 VOICE")) )
     );

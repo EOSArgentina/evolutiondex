@@ -19,9 +19,9 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
       [[eosio::action]] void closefeetable(name user, symbol_code token);
       [[eosio::action]] void updatefee(symbol_code token);
       [[eosio::on_notify("evolutiondex::addliquidity")]] void addliquidity(name user, asset to_buy, 
-        extended_asset max_ext_asset1, extended_asset max_ext_asset2);
+        asset max_asset1, asset max_asset2);
       [[eosio::on_notify("evolutiondex::remliquidity")]] void remliquidity(name user, asset to_sell,
-        extended_asset min_ext_asset1, extended_asset min_ext_asset2);
+        asset min_asset1, asset min_asset2);
       [[eosio::on_notify("evolutiondex::transfer")]] void transfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
 
