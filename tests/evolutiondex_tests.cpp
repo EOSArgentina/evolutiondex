@@ -781,39 +781,47 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Both assets must be positive"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("-0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Both assets must be positive"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("-0.1000 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("-0.1000 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Initial amounts must be less than 10^15"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("100000000000.0001 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("100000000000.0001 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("Initial amounts must be less than 10^15"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("100000000000.0001 EOS")),
-      extend(asset::from_string("1.0001 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("1.0001 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended symbols must be different"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 EOS")), 10, N(foo)) );
+      extend(asset::from_string("0.1000 EOS")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), 
       inittoken( N(alice), ETUSD4, 
       extend(asset::from_string("0.0003 EOS")), 
-      extend(asset::from_string("0.1000 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), 
       inittoken( N(alice), ETUSD4, 
       extend(asset::from_string("0.0002 EOS")), 
-      extend(asset::from_string("100000000.0000 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("100000000.0000 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("token symbol already exists"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), 10, N(foo)) );
+      extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), ETUSD4, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), 501, N(foo)) );
+      extend(asset::from_string("0.1000 VOICE")), 501, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), ETUSD4, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), -1, N(foo)) );
+      extend(asset::from_string("0.1000 VOICE")), -1, N(wevotethefee)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("fee_contract account must exist or be empty"), inittoken( N(alice), ETUSD4, 
+      extend(asset::from_string("0.0001 EOS")),
+      extend(asset::from_string("0.1000 VOICE")), 1, N(nonexistent)) );
+    BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), ETUSD4, 
+      extend(asset::from_string("0.0001 EOS")),
+      extend(asset::from_string("0.0001 VOICE")), 1, N( )) );
+    BOOST_REQUIRE_EQUAL( success(), remliquidity( N(alice), asset::from_string("0.0001 ETUSD"),
+      asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
 
   // TRANSFER
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol not registered for this user,\

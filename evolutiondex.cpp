@@ -119,7 +119,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     add_signed_ext_balance(user, -to_pay1);
     add_signed_ext_balance(user, -to_pay2);
     (to_add.amount > 0)? add_balance(user, to_add, user) : sub_balance(user, -to_add);
-    if (is_account(token->fee_contract)) require_recipient(token->fee_contract);
+    if (token->fee_contract) require_recipient(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.supply += to_add;
       a.pool1 += to_pay1;
@@ -209,6 +209,7 @@ extended_asset initial_pool2, int initial_fee, name fee_contract)
     const auto& token = statstable.find( new_token.symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
     check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
+    check( is_account(fee_contract) || !fee_contract, "fee_contract account must exist or be empty");
 
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
