@@ -231,6 +231,7 @@ void evolutiondex::changefee(symbol_code pair_token, int newfee) {
     stats statstable( get_self(), pair_token.raw() );
     const auto& token = statstable.find( pair_token.raw() );
     check ( token != statstable.end(), "pair token does not exist" );
+    check( (token->fee_contract) != ""_n, "this pair token has fixed fee parameter" );
     require_auth(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.fee = newfee;
