@@ -164,3 +164,5 @@ Finally, to change the fee for operating through EOSPESO run:
 
 and the fee will now be set to 0.37%. Or you can configure a contract to perform
 the *changefee* action.
+
+Check the commands of wevotethefee [here](wevotethefee/vote_commands.md).
