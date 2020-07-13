@@ -24,5 +24,8 @@ struct contracts {
 
    static std::vector<uint8_t> badtoken_wasm() { return read_wasm("/home/sergio/Dropbox/eos/contracts/evo/tests/../badtoken.wasm"); }
    static std::vector<char>    badtoken_abi() { return read_abi("/home/sergio/Dropbox/eos/contracts/evo/tests/../badtoken.abi"); }
+
+   static std::vector<uint8_t> wevotethefee_wasm() { return read_wasm("/home/sergio/Dropbox/eos/contracts/evo/wevotethefee/wevotethefee.wasm"); }
+   static std::vector<char>    wevotethefee_abi() { return read_abi("/home/sergio/Dropbox/eos/contracts/evo/wevotethefee/wevotethefee.abi"); }
 }; 
 }} //ns eosio::testing

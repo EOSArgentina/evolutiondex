@@ -44,6 +44,9 @@ public:
         set_code( N(badtoken), contracts::badtoken_wasm() );
         set_abi( N(badtoken), contracts::badtoken_abi().data() );
 
+        set_code( N(wevotethefee), contracts::wevotethefee_wasm() );
+        set_abi( N(wevotethefee), contracts::wevotethefee_abi().data() );
+        
         produce_blocks();
 
         const auto& accnt1 = control->db().get<account_object,by_name>( N(eosio.token) );
@@ -165,6 +168,25 @@ public:
         );
     }
 
+    action_result openfeetable( name user, symbol_code pair_token ) {
+        return push_action( N(wevotethefee), user, N(openfeetable), mvo()
+          ( "user", user )
+          ( "pair_token", pair_token )
+        );
+    }
+    action_result votefee( name user, symbol_code pair_token, int fee_voted ) {
+        return push_action( N(wevotethefee), user, N(votefee), mvo()
+          ( "user", user )
+          ( "pair_token", pair_token )
+          ( "fee_voted", fee_voted )
+        );
+    }
+    action_result updatefee( name user, symbol_code pair_token ) {
+      return push_action( N(wevotethefee), user, N(updatefee), mvo()
+        ( "pair_token", pair_token )
+      );
+    }
+
     int64_t balance(name user, int64_t id) {
         auto _balance = get_balance(N(evolutiondex), user, N(evodexacnts), id, "evodexaccount" );
         return to_int(fc::json::to_string(_balance["balance"]["quantity"], 
@@ -201,12 +223,14 @@ public:
         return x <= y;
     }
     vector <int64_t> total(){
+        auto EVO_value = symbol::from_string("4,EVO").to_symbol_code().value;
+        auto ETUSD_value = symbol::from_string("4,ETUSD").to_symbol_code().value;
         int64_t total_eos =  balance(N(alice), 0) + balance(N(bob), 0) 
-          + system_balance(5199429).at(0) + system_balance(293455877189).at(0);
+          + system_balance(EVO_value).at(0) + system_balance(ETUSD_value).at(0);
         int64_t total_voice = balance(N(alice), 1) + balance(N(bob), 1) 
-          + system_balance(5199429).at(1);
+          + system_balance(EVO_value).at(1);
         int64_t total_tusd = balance(N(alice), 2) + balance(N(bob), 2)
-          + system_balance(293455877189).at(1);
+          + system_balance(ETUSD_value).at(1);
         vector <int64_t> ans = {total_eos, total_voice, total_tusd};
         return ans;
     }
@@ -264,6 +288,7 @@ extended_asset extend(asset to_extend) {
 }
 
 BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
+
 
 BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
@@ -420,8 +445,6 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"),
       exchange( N(alice), EVO, extend(asset::from_string("4.0000 EOS")),
       asset::from_string("400.0000 VOICE")) );
-      
-//    cout << system_balance(EVO.value).at(0) << " " << system_balance(EVO.value).at(1);
 
     exchange( N(alice), EVO, extend(asset::from_string("4.0000 EOS")), asset::from_string("10.0000 VOICE"));
     exchange( N(alice), EVO, extend(asset::from_string("0.1000 EOS")), asset::from_string("4.8500 VOICE"));
@@ -878,5 +901,51 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
       asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
 
 } FC_LOG_AND_RETHROW()
+
+
+BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
+
+    create_tokens_and_issue();
+    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+
+    const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
+    abi_def abi_evo;
+    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+
+    many_openext();
+
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
+    
+    inittoken( N(alice), EVO4,
+      extend(asset::from_string("1000000.0000 EOS")), 
+      extend(asset::from_string("100000000.0000 VOICE")), 10, N(wevotethefee));
+
+    const auto& accnt3 = control->db().get<account_object,by_name>( N(wevotethefee) );
+    abi_def abi_wevote;
+    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt3.abi, abi_wevote), true);
+
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("there are no votes"), updatefee(N(alice), EVO));
+
+    BOOST_REQUIRE_EQUAL(success(), votefee(N(alice), EVO, 30));
+    BOOST_REQUIRE_EQUAL(success(), updatefee(N(alice), EVO));
+
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    auto evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(30, evo_stats["fee"]);
+
+    BOOST_REQUIRE_EQUAL(success(), 
+      transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("100.0000 EVO"), ""));
+    
+    // test median in some scenarios
+    // test every check
+    // test incoming notifications
+
+} FC_LOG_AND_RETHROW()
+
 
 BOOST_AUTO_TEST_SUITE_END()
