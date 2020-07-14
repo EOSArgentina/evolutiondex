@@ -174,11 +174,23 @@ public:
           ( "pair_token", pair_token )
         );
     }
+    action_result closefeetable( name user, symbol_code pair_token ) {
+        return push_action( N(wevotethefee), user, N(closefeetable), mvo()
+          ( "user", user )
+          ( "pair_token", pair_token )
+        );
+    }
     action_result votefee( name user, symbol_code pair_token, int fee_voted ) {
         return push_action( N(wevotethefee), user, N(votefee), mvo()
           ( "user", user )
           ( "pair_token", pair_token )
           ( "fee_voted", fee_voted )
+        );
+    }
+    action_result closevote( name user, symbol_code pair_token ) {
+        return push_action( N(wevotethefee), user, N(closevote), mvo()
+          ( "user", user )
+          ( "pair_token", pair_token )
         );
     }
     action_result updatefee( name user, symbol_code pair_token ) {
@@ -288,7 +300,6 @@ extended_asset extend(asset to_extend) {
 }
 
 BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
-
 
 BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
@@ -905,6 +916,7 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
 
 BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
 
+// Setting scenario for other contracts
     create_tokens_and_issue();
     transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
@@ -926,24 +938,46 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     abi_def abi_wevote;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt3.abi, abi_wevote), true);
 
+// Start wevotethefee actions. Testing checks and basic functions.
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    auto ISNT = symbol::from_string("4,ISNT").to_symbol_code();
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("pair_token balance does not exist"), 
+      votefee(N(alice), ISNT, 30) );
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), votefee(N(alice), EVO, 30));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), updatefee(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("table does not exist"), closefeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("already opened"), openfeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("there are no votes"), updatefee(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("user is not voting"), closevote(N(alice), EVO));
 
     BOOST_REQUIRE_EQUAL(success(), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(success(), updatefee(N(alice), EVO));
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     auto evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
-    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
     BOOST_REQUIRE_EQUAL(30, evo_stats["fee"]);
 
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    auto evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+      "feetable" )["votes"].get_array();
+    BOOST_REQUIRE_EQUAL(100000000000, evo_votes[8]);
+
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     BOOST_REQUIRE_EQUAL(success(), 
       transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("100.0000 EVO"), ""));
-    
+
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    BOOST_REQUIRE_EQUAL(success(), votefee(N(bob), EVO, 300));
+    evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+      "feetable" )["votes"].get_array();
+    BOOST_REQUIRE_EQUAL(99999000000, evo_votes[8]); 
+    BOOST_REQUIRE_EQUAL(1000000, evo_votes[14]);
+
+    // cout << evo_votes;
+
+    // test balance changes on every notification
     // test median in some scenarios
-    // test every check
-    // test incoming notifications
 
 } FC_LOG_AND_RETHROW()
 
