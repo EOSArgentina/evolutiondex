@@ -39,7 +39,7 @@ void wevotethefee::transfer(const name& from, const name& to, const asset& quant
 asset wevotethefee::bring_balance(name user, symbol_code pair_token) {
     accounts table( "evolutiondex"_n, user.value );
     const auto& user_balance = table.find( pair_token.raw() );
-    check ( user_balance != table.end(), "pair_token does not exist" );
+    check ( user_balance != table.end(), "pair_token balance does not exist" );
     return user_balance->balance;
 }
 
@@ -107,13 +107,13 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
     feetables tables( get_self(), pair_token.raw() );
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "fee table nonexistent, run openfeetable" );
-    tables.modify(table, ""_n, [&]( auto& a ){
+    tables.modify(table, same_payer, [&]( auto& a ){
       a.votes.at(fee_index) += amount;
     });
 }
 
 int wevotethefee::get_index(int fee_value){
-    int index;
+    int index = 0;
     for (int i = 0; (i < fee_vector.size() ) && (fee_vector.at(i) <= fee_value); i++){
         index = i;
     }
