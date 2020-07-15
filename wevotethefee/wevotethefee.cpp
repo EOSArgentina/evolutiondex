@@ -5,10 +5,10 @@ int wevotethefee::median(symbol_code pair_token){
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "fee table nonexistent, run openfeetable" );
     auto votes = table->votes;
-    int64_t sum = accumulate(votes.begin(), votes.end(), 0);
-    check( sum > 0, "there are no votes");
-    vector <int64_t> partial_sum_vec = votes;
+    vector <int64_t> partial_sum_vec(votes.size());
     partial_sum(votes.begin(), votes.end(), partial_sum_vec.begin());
+    int64_t sum = partial_sum_vec.back();
+    check( sum > 0, "there are no votes");
     auto it = lower_bound(partial_sum_vec.begin(), partial_sum_vec.end(), sum / 2);
     auto index = it - partial_sum_vec.begin();
     return fee_vector.at(index);
