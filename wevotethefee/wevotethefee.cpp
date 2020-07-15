@@ -5,22 +5,18 @@ int wevotethefee::median(symbol_code pair_token){
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "fee table nonexistent, run openfeetable" );
     auto votes = table->votes;
-    int64_t sum = 0, partial_sum = 0;
-    int index = 0;
-    for (int i = 0; i < fee_vector.size(); i++) {
-        sum += votes.at(i);
-    }
+    int64_t sum = accumulate(votes.begin(), votes.end(), 0);
     check( sum > 0, "there are no votes");
-    for (int i = 0; 2 * partial_sum < sum; i++) {
-        partial_sum += votes.at(i);
-        index = i;
-    }
+    vector <int64_t> partial_sum_vec = votes;
+    partial_sum(votes.begin(), votes.end(), partial_sum_vec.begin());
+    auto it = lower_bound(partial_sum_vec.begin(), partial_sum_vec.end(), sum / 2);
+    auto index = it - partial_sum_vec.begin();
     return fee_vector.at(index);
 }
 
 void wevotethefee::updatefee(symbol_code pair_token) {
     action(permission_level{ get_self(), "active"_n }, "evolutiondex"_n, "changefee"_n,
-      std::make_tuple( pair_token, median(pair_token))).send(); 
+      make_tuple( pair_token, median(pair_token))).send(); 
 }
 
 void wevotethefee::addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2){
@@ -79,11 +75,10 @@ void wevotethefee::closefeetable(name user, symbol_code pair_token) {
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "table does not exist" );
     auto votes = table->votes;
-    bool empty = true;
-    for (int i = 0; i < votes.size(); i++) {
-        empty &= !votes.at(i);
-    }
-    if (empty) tables.erase(table);
+    auto is_empty = all_of(votes.begin(), votes.end(), 
+        [](const int & votes_number){return votes_number == 0;});
+    check( is_empty, "table of votes is not empty");
+    tables.erase(table);
 }
 
 void wevotethefee::openfeetable(name user, symbol_code pair_token) {
@@ -113,9 +108,6 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
 }
 
 int wevotethefee::get_index(int fee_value){
-    int index = 0;
-    for (int i = 0; (i < fee_vector.size() ) && (fee_vector.at(i) <= fee_value); i++){
-        index = i;
-    }
-    return index;
+    auto it = lower_bound(fee_vector.begin(), fee_vector.end(), fee_value);
+    return it - fee_vector.begin(); 
 }

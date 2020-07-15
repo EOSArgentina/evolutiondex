@@ -5,6 +5,7 @@
 #include <eosio/system.hpp>
 #include <eosio/print.hpp>
 #include <cmath>
+#include <numeric>
 
 using namespace eosio;
 using namespace std;
