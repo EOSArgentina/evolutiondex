@@ -947,12 +947,17 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), updatefee(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("table does not exist"), closefeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(success(), closefeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), votefee(N(alice), EVO, 30));
+    BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("already opened"), openfeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("there are no votes"), updatefee(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("user is not voting"), closevote(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 1 and 300 allowed"), votefee(N(alice), EVO, 301));
 
     BOOST_REQUIRE_EQUAL(success(), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(success(), updatefee(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("table of votes is not empty"), closefeetable(N(alice), EVO));
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     auto evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
@@ -963,6 +968,7 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
       "feetable" )["votes"].get_array();
     BOOST_REQUIRE_EQUAL(100000000000, evo_votes[8]);
 
+    // Vote balance change after transfer
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     BOOST_REQUIRE_EQUAL(success(), 
       transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("100.0000 EVO"), ""));
@@ -974,10 +980,59 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(99999000000, evo_votes[8]); 
     BOOST_REQUIRE_EQUAL(1000000, evo_votes[14]);
 
-    // cout << evo_votes;
+    // Scenarios with many votes
+    create_accounts( { N(dan), N(eva), N(fran)});
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);    
+    BOOST_REQUIRE_EQUAL(success(), transfer( N(evolutiondex), N(alice), N(carol), asset::from_string("2000.0000 EVO"), ""));
+    transfer( N(evolutiondex), N(alice), N(dan), asset::from_string("400000.0000 EVO"), "");
+    transfer( N(evolutiondex), N(alice), N(eva), asset::from_string("4240000.0000 EVO"), "");
+    transfer( N(evolutiondex), N(alice), N(fran), asset::from_string("2500000.0000 EVO"), "");
 
-    // test balance changes on every notification
-    // test median in some scenarios
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    BOOST_REQUIRE_EQUAL(success(), votefee(N(carol), EVO, 1));
+    votefee(N(dan), EVO, 2);
+    votefee(N(eva), EVO, 99);
+    votefee(N(fran), EVO, 108);
+
+    evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+      "feetable" )["votes"].get_array();
+    cout << evo_votes;
+
+    updatefee(N(alice), EVO);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(100, evo_stats["fee"]);
+
+    openext( N(eva), N(eva), extended_symbol{symbol::from_string("4,EOS"), N(eosio.token)});
+    openext( N(eva), N(eva), extended_symbol{symbol::from_string("4,VOICE"), N(eosio.token)});
+    push_action( N(evolutiondex), N(eva), N(remliquidity), mvo()
+          ( "user", N(eva))( "to_sell", asset::from_string("4000000.0000 EVO"))
+          ( "min_asset1", asset::from_string("1.0000 EOS") )
+          ( "min_asset2", asset::from_string("1.0000 VOICE")) );
+
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+      "feetable" )["votes"].get_array();
+    cout << evo_votes;
+
+    updatefee(N(alice), EVO);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(30, evo_stats["fee"]);
+
+    // to do: test exact vote balance change on every notification
+
+    BOOST_REQUIRE_EQUAL(success(), push_action( N(evolutiondex), N(eva), N(addliquidity), mvo()
+          ( "user", N(eva))( "to_buy", asset::from_string("3900000.0000 EVO"))
+          ( "max_asset1", asset::from_string("100000000000.0000 EOS") )
+          ( "max_asset2", asset::from_string("100000000000.0000 VOICE")) )   );
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    updatefee(N(alice), EVO);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(100, evo_stats["fee"]);
+
+    // to do: test median in scenarios where the answer is 1 and 300.
 
 } FC_LOG_AND_RETHROW()
 

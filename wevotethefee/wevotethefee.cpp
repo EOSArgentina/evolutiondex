@@ -40,6 +40,7 @@ asset wevotethefee::bring_balance(name user, symbol_code pair_token) {
 }
 
 void wevotethefee::votefee(name user, symbol_code pair_token, int fee_voted){
+    check( (1 <= fee_voted) && (fee_voted <= 300), "only values between 1 and 300 allowed");
     int fee_index_voted = get_index(fee_voted);
     require_auth(user);
     feeaccounts acnts( get_self(), user.value );
