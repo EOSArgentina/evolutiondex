@@ -70,8 +70,7 @@ void wevotethefee::closevote(name user, symbol_code pair_token) {
     acnts.erase(acnt);
 }
 
-void wevotethefee::closefeetable(name user, symbol_code pair_token) {
-    require_auth(user);
+void wevotethefee::closefeetable(symbol_code pair_token) {
     feetables tables( get_self(), pair_token.raw() );
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "table does not exist" );

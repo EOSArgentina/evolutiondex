@@ -17,7 +17,7 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
       [[eosio::action]] void votefee(name user, symbol_code pair_token, int fee_voted);
       [[eosio::action]] void openfeetable(name user, symbol_code pair_token);
       [[eosio::action]] void closevote(name user, symbol_code pair_token);
-      [[eosio::action]] void closefeetable(name user, symbol_code pair_token);
+      [[eosio::action]] void closefeetable(symbol_code pair_token);
       [[eosio::action]] void updatefee(symbol_code pair_token);
       [[eosio::on_notify("evolutiondex::addliquidity")]] void addliquidity(name user, asset to_buy, 
         asset max_asset1, asset max_asset2);

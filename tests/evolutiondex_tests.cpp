@@ -174,9 +174,8 @@ public:
           ( "pair_token", pair_token )
         );
     }
-    action_result closefeetable( name user, symbol_code pair_token ) {
-        return push_action( N(wevotethefee), user, N(closefeetable), mvo()
-          ( "user", user )
+    action_result closefeetable( symbol_code pair_token ) {
+        return push_action( N(wevotethefee), N(wevotethefee), N(closefeetable), mvo()
           ( "pair_token", pair_token )
         );
     }
@@ -300,7 +299,6 @@ extended_asset extend(asset to_extend) {
 }
 
 BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
-
 
 BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
@@ -914,9 +912,10 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+
+
 BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
 
-// Setting scenario for other contracts
     create_tokens_and_issue();
     transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
@@ -947,9 +946,9 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
       votefee(N(bob), EVO, 30) );
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), updatefee(N(alice), EVO));
-    BOOST_REQUIRE_EQUAL(wasm_assert_msg("table does not exist"), closefeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("table does not exist"), closefeetable(EVO));
     BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
-    BOOST_REQUIRE_EQUAL(success(), closefeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(success(), closefeetable(EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("already opened"), openfeetable(N(alice), EVO));
@@ -961,7 +960,7 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
 
     BOOST_REQUIRE_EQUAL(success(), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(success(), updatefee(N(alice), EVO));
-    BOOST_REQUIRE_EQUAL(wasm_assert_msg("table of votes is not empty"), closefeetable(N(alice), EVO));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("table of votes is not empty"), closefeetable(EVO));
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     auto evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
@@ -971,6 +970,16 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     auto evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
     BOOST_REQUIRE_EQUAL(100000000000, evo_votes[8]);
+
+    // Test authorizations
+    BOOST_REQUIRE_EQUAL( error("missing authority of bob"),
+      push_action( N(wevotethefee), N(alice), N(votefee), 
+        mvo()( "user", N(bob) )( "pair_token", EVO )( "fee_voted", "10" ) )
+    );
+    BOOST_REQUIRE_EQUAL( error("missing authority of bob"),
+      push_action( N(wevotethefee), N(alice), N(closevote), 
+        mvo()( "user", N(bob) )( "pair_token", EVO ) )
+    );
 
     // Vote balance change after transfer
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
