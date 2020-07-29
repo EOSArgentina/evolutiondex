@@ -19,11 +19,11 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
       [[eosio::action]] void closevote(name user, symbol_code pair_token);
       [[eosio::action]] void closefeetable(symbol_code pair_token);
       [[eosio::action]] void updatefee(symbol_code pair_token);
-      [[eosio::on_notify("evolutiondex::addliquidity")]] void addliquidity(name user, asset to_buy, 
+      [[eosio::on_notify("evolutiondex::addliquidity")]] void onaddliquidity(name user, asset to_buy, 
         asset max_asset1, asset max_asset2);
-      [[eosio::on_notify("evolutiondex::remliquidity")]] void remliquidity(name user, asset to_sell,
+      [[eosio::on_notify("evolutiondex::remliquidity")]] void onremliquidity(name user, asset to_sell,
         asset min_asset1, asset min_asset2);
-      [[eosio::on_notify("evolutiondex::transfer")]] void transfer(const name& from, const name& to, 
+      [[eosio::on_notify("evolutiondex::transfer")]] void ontransfer(const name& from, const name& to, 
            const asset& quantity, const string&  memo );
 
    private:

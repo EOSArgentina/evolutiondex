@@ -19,15 +19,15 @@ void wevotethefee::updatefee(symbol_code pair_token) {
       make_tuple( pair_token, median(pair_token))).send(); 
 }
 
-void wevotethefee::addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2){
+void wevotethefee::onaddliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2){
     add_balance(user, to_buy);
 }
 
-void wevotethefee::remliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2){
+void wevotethefee::onremliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2){
     add_balance(user, -to_sell);
 }
 
-void wevotethefee::transfer(const name& from, const name& to, const asset& quantity, const string&  memo ){
+void wevotethefee::ontransfer(const name& from, const name& to, const asset& quantity, const string&  memo ){
     add_balance(from, -quantity);
     add_balance(to, quantity);
 };
