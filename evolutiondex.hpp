@@ -71,6 +71,7 @@ namespace evolution {
          void add_signed_ext_balance( const name& owner, const extended_asset& value );
          void add_signed_liq(name user, asset to_buy, bool is_buying, asset max_asset1, asset max_asset2);
          void memoexchange(name user, extended_asset ext_asset_in, string_view details);
+         void give(extended_asset ext_asset_in, string_view details);         
          extended_asset process_exch(symbol_code evo_token, extended_asset paying, asset min_expected);
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);
          asset string_to_asset(string input);

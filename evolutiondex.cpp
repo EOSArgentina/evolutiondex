@@ -35,6 +35,7 @@ void evolutiondex::closeext( const name& user, const name& to, const extended_sy
 void evolutiondex::ontransfer(name from, name to, asset quantity, string memo) {
     constexpr string_view DEPOSIT_TO = "deposit to:";
     constexpr string_view EXCHANGE   = "exchange:";
+    constexpr string_view GIVE       = "give:";
 
     if (from == get_self()) return;
     check(to == get_self(), "This transfer is not for evolutiondex");
@@ -42,9 +43,11 @@ void evolutiondex::ontransfer(name from, name to, asset quantity, string memo) {
 
     auto incoming = extended_asset{quantity, get_first_receiver()};
     string_view memosv(memo);
-    if ( starts_with(memosv, EXCHANGE) ) {
+    if ( starts_with(memosv, EXCHANGE) ) 
       memoexchange(from, incoming, memosv.substr(EXCHANGE.size()) );
-    } else {
+    else if ( starts_with(memosv, GIVE) )
+      give( incoming, trim(memosv.substr(GIVE.size())) );
+    else {
       if ( starts_with(memosv, DEPOSIT_TO) ) {
           from = name(trim(memosv.substr(DEPOSIT_TO.size())));
           check(from != get_self(), "Donation not accepted");
@@ -194,6 +197,26 @@ void evolutiondex::memoexchange(name user, extended_asset ext_asset_in, string_v
     auto ext_asset_out = process_exch(pair_token, ext_asset_in, min_expected);
     action(permission_level{ get_self(), "active"_n }, ext_asset_out.contract, "transfer"_n,
       std::make_tuple( get_self(), user, ext_asset_out.quantity, std::string(memo)) ).send();
+}
+
+void evolutiondex::give(extended_asset ext_asset_in, string_view details){
+    auto pair_token = symbol_code(details);
+    stats statstable( get_self(), pair_token.raw() );
+    const auto& token = statstable.find( pair_token.raw() );
+    check ( token != statstable.end(), "pair token does not exist" );
+    check ( (ext_asset_in.get_extended_symbol() == token->pool1.get_extended_symbol() ) || 
+      (ext_asset_in.get_extended_symbol() == token->pool2.get_extended_symbol() ) , 
+      "token to give must match one side of the pool" );
+
+    if ( ext_asset_in.contract == token->pool1.contract ) {
+      statstable.modify( token, same_payer, [&]( auto& a ) {
+        a.pool1 += ext_asset_in;
+      });
+    } else {
+      statstable.modify( token, same_payer, [&]( auto& a ) {
+        a.pool2 += ext_asset_in;
+      });
+    }
 }
 
 void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset initial_pool1,
