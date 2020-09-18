@@ -26,6 +26,7 @@ namespace evolution {
          [[eosio::action]] void withdraw(name user, name to, extended_asset to_withdraw, string memo);
          [[eosio::action]] void addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2);
          [[eosio::action]] void remliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2);
+         [[eosio::action]] void onesideremli(name user, asset to_sell, extended_asset min_expected);
          [[eosio::action]] void exchange( name user, symbol_code pair_token, extended_asset ext_asset_in, asset min_expected );
          [[eosio::action]] void changefee(symbol_code pair_token, int newfee);
 
@@ -71,6 +72,8 @@ namespace evolution {
          void add_signed_ext_balance( const name& owner, const extended_asset& value );
          void add_signed_liq(name user, asset to_buy, bool is_buying, asset max_asset1, asset max_asset2);
          void memoexchange(name user, extended_asset ext_asset_in, string_view details);
+         void one_side_addliquidity(name user, extended_asset ext_asset_in, string_view details);
+         asset one_side_add_signed_liq(name user, asset to_add, bool is_buying, extended_asset max_ext_asset);
          void give(extended_asset ext_asset_in, string_view details);         
          extended_asset process_exch(symbol_code evo_token, extended_asset paying, asset min_expected);
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);

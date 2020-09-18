@@ -1,5 +1,6 @@
 #include "evolutiondex.hpp"
 #include "utils.hpp"
+#include <eosio/print.hpp>
 
 using namespace evolution;
 
@@ -35,7 +36,7 @@ void evolutiondex::closeext( const name& user, const name& to, const extended_sy
 void evolutiondex::ontransfer(name from, name to, asset quantity, string memo) {
     constexpr string_view DEPOSIT_TO = "deposit to:";
     constexpr string_view EXCHANGE   = "exchange:";
-    constexpr string_view GIVE       = "give:";
+    constexpr string_view ADD_LIQUIDITY = "add liquidity:";
 
     if (from == get_self()) return;
     check(to == get_self(), "This transfer is not for evolutiondex");
@@ -45,8 +46,8 @@ void evolutiondex::ontransfer(name from, name to, asset quantity, string memo) {
     string_view memosv(memo);
     if ( starts_with(memosv, EXCHANGE) ) 
       memoexchange(from, incoming, memosv.substr(EXCHANGE.size()) );
-    else if ( starts_with(memosv, GIVE) )
-      give( incoming, trim(memosv.substr(GIVE.size())) );
+    else if ( starts_with(memosv, ADD_LIQUIDITY) )
+      one_side_addliquidity(from, incoming, trim(memosv.substr(ADD_LIQUIDITY.size())) );
     else {
       if ( starts_with(memosv, DEPOSIT_TO) ) {
           from = name(trim(memosv.substr(DEPOSIT_TO.size())));
@@ -80,7 +81,7 @@ void evolutiondex::remliquidity(name user, asset to_sell,
     add_signed_liq(user, -to_sell, false, -min_asset1, -min_asset2);
 }
 
-// computes x * y / z plus the fee
+// computes x * y / z plus the fee, everything rounded upwards
 int64_t evolutiondex::compute(int64_t x, int64_t y, int64_t z, int fee) {
     check( (x != 0) && (y > 0) && (z > 0), "invalid parameters");
     int128_t prod = int128_t(x) * int128_t(y);
@@ -199,24 +200,68 @@ void evolutiondex::memoexchange(name user, extended_asset ext_asset_in, string_v
       std::make_tuple( get_self(), user, ext_asset_out.quantity, std::string(memo)) ).send();
 }
 
-void evolutiondex::give(extended_asset ext_asset_in, string_view details){
-    auto pair_token = symbol_code(details);
-    stats statstable( get_self(), pair_token.raw() );
-    const auto& token = statstable.find( pair_token.raw() );
-    check ( token != statstable.end(), "pair token does not exist" );
-    check ( (ext_asset_in.get_extended_symbol() == token->pool1.get_extended_symbol() ) || 
-      (ext_asset_in.get_extended_symbol() == token->pool2.get_extended_symbol() ) , 
-      "token to give must match one side of the pool" );
+asset evolutiondex::one_side_add_signed_liq(name user, asset to_add, bool is_buying,
+  extended_asset max_ext_asset){
+    stats statstable( get_self(), to_add.symbol.code().raw() );
+    const auto& token = statstable.find( to_add.symbol.code().raw() );
 
-    if ( ext_asset_in.contract == token->pool1.contract ) {
+    check ( token != statstable.end(), "pair token does not exist" );
+    check ( (max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) || 
+      (max_ext_asset.get_extended_symbol() == token->pool2.get_extended_symbol() ) , 
+      "token to provide must match one side of the pool" );
+
+    auto S = token-> supply.amount;
+    int64_t P = 0;
+    if ( max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) {
+      P = token-> pool1.quantity.amount;
+    } else {
+      P = token-> pool2.quantity.amount;
+    }
+    auto denominator = -compute(-S, S, 2 * S + to_add.amount, 0);
+    auto to_pay_amount = compute(to_add.amount, P, denominator, token->fee );
+    auto asset_to_pay = asset{to_pay_amount, max_ext_asset.quantity.symbol };
+    check( max_ext_asset.quantity >= asset_to_pay, "available is less than expected");
+
+    auto to_pay = extended_asset{asset_to_pay, max_ext_asset.contract };
+    if (token->fee_contract) require_recipient(token->fee_contract); // agregar notification handler a wevotethefee
+    add_balance(user, to_add, user);
+    if ( max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) {
       statstable.modify( token, same_payer, [&]( auto& a ) {
-        a.pool1 += ext_asset_in;
+        a.supply += to_add;
+        a.pool1 += to_pay;
       });
     } else {
       statstable.modify( token, same_payer, [&]( auto& a ) {
-        a.pool2 += ext_asset_in;
+        a.supply += to_add;
+        a.pool2 += to_pay;
       });
     }
+    return asset_to_pay;
+}
+
+void evolutiondex::one_side_addliquidity(name user, extended_asset max_to_pay, string_view details){
+    auto to_buy = asset_from_string(details);
+    check( (to_buy.amount > 0), "to_buy amount must be positive");
+    auto asset_to_pay = one_side_add_signed_liq(user, to_buy, true, max_to_pay);
+    if (max_to_pay.quantity > asset_to_pay) {
+        string memo = "";
+        action(permission_level{ get_self(), "active"_n }, 
+          max_to_pay.contract, "transfer"_n,
+          std::make_tuple( get_self(), user, max_to_pay.quantity - asset_to_pay, memo) 
+        ).send();
+    }
+}
+
+void evolutiondex::onesideremli(name user, asset to_sell, extended_asset min_expected){
+    require_auth(user);
+    check(to_sell.amount > 0, "to_sell amount must be positive");
+    check( min_expected.quantity.amount >= 0, "min_asset must be nonnegative");
+    auto asset_to_receive = -one_side_add_signed_liq(user, -to_sell, false, min_expected);
+    string memo = "";
+    action(permission_level{ get_self(), "active"_n }, 
+      min_expected.contract, "transfer"_n,
+      std::make_tuple( get_self(), user, asset_to_receive, memo) 
+    ).send();
 }
 
 void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset initial_pool1,
