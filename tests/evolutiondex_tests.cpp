@@ -153,6 +153,15 @@ public:
           ( "min_asset2", min_asset2)
         );
     }
+    action_result onesideremli(name user, asset to_sell, 
+      extended_asset min_expected, string memo) {
+        return push_action( N(evolutiondex), user, N(onesideremli), mvo()
+          ( "user", user )
+          ( "to_sell", to_sell )
+          ( "min_expected", min_expected)
+          ( "memo", memo)
+        );
+    }
     action_result exchange( name user, symbol_code pair_token, extended_asset ext_asset_in, asset min_expected ) {
         return push_action( N(evolutiondex), user, N(exchange), mvo()
           ( "user", user )
@@ -474,6 +483,83 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
     BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999875884);
     BOOST_REQUIRE_EQUAL(balance(N(alice),1), 999995784721);
+
+// one_side_addliquidity and onesiremli, assert tests
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("pair token does not exist"), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), 
+        asset::from_string("10000.0000 EOS"), "add liquidity: 10.0000 NOT")
+    );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("token to provide must match one side of the pool"), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), 
+        asset::from_string("1.0000 TUSD"), "add liquidity: 10.0000 EVO")
+    );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"),
+      transfer( N(eosio.token), N(alice), N(evolutiondex), 
+        asset::from_string("1.0000 VOICE"), "add liquidity: 10.0000 EVO")
+    );
+
+//  wasm_assert_msg("to_buy amount must be positive") is unreachable for the moment
+
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("to_sell amount must be positive"), 
+        onesideremli( N(alice), asset::from_string("-5.6000 EVO"), 
+        extend(asset::from_string("0.1000 EOS")), "")
+    );
+
+
+// first side add    
+    auto old_system_balance = expected_system_balance;
+    auto old_alice_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
+    BOOST_REQUIRE_EQUAL( success(), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), 
+        asset::from_string("10000.0000 EOS"), "add liquidity: 10.0000 EVO")
+    );
+    expected_system_balance = {10000144218, 1000004215279, 100000928128};
+    BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
+    auto new_alice_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
+    BOOST_REQUIRE_EQUAL( true, old_alice_eos_balance == 20102 + new_alice_eos_balance);
+    BOOST_REQUIRE_EQUAL( true, is_increasing( old_system_balance, expected_system_balance ) );
+
+// second side add
+    old_system_balance = expected_system_balance;
+    auto old_alice_voice_balance = token_balance(N(eosio.token), N(alice), VOICE.value);
+    BOOST_REQUIRE_EQUAL( success(), 
+      transfer( N(eosio.token), N(alice), N(evolutiondex), 
+        asset::from_string("10000.0000 VOICE"), "add liquidity: 10.0000 EVO")
+    );
+    expected_system_balance = {10000144218, 1000006225270, 100001028128};
+    BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
+    auto new_alice_voice_balance = token_balance(N(eosio.token), N(alice), VOICE.value);
+    BOOST_REQUIRE_EQUAL( true, old_alice_voice_balance == 2009991 + new_alice_voice_balance);
+    BOOST_REQUIRE_EQUAL( true, is_increasing( old_system_balance, system_balance(EVO.value) ) );
+
+// first side rem li
+    old_system_balance = expected_system_balance;
+    old_alice_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
+    BOOST_REQUIRE_EQUAL( success(), 
+        onesideremli( N(alice), asset::from_string("5.6000 EVO"), 
+        extend(asset::from_string("0.1000 EOS")), "deliver to your cousin")
+    );
+    expected_system_balance = {10000133018, 1000006225270, 100000972128};
+    BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
+    new_alice_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
+    BOOST_REQUIRE_EQUAL( true, old_alice_eos_balance == -11200 + new_alice_eos_balance);
+    BOOST_REQUIRE_EQUAL( true, is_increasing( old_system_balance, expected_system_balance ) );
+
+// second side rem li
+    old_system_balance = expected_system_balance;
+    old_alice_voice_balance = token_balance(N(eosio.token), N(alice), VOICE.value);
+    BOOST_REQUIRE_EQUAL( success(),
+        onesideremli( N(alice), asset::from_string("0.0100 EVO"), 
+        extend(asset::from_string("0.0001 VOICE")), "deliver to your cousin")
+    );
+    expected_system_balance = {10000133018, 1000006223271, 100000972028};
+    BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
+    new_alice_voice_balance = token_balance(N(eosio.token), N(alice), VOICE.value);
+    BOOST_REQUIRE_EQUAL( true, old_alice_voice_balance == -1999 + new_alice_voice_balance);
+    BOOST_REQUIRE_EQUAL( true, is_increasing( old_system_balance, expected_system_balance ) );
+
+//    cout << system_balance(EVO.value).at(0) << " " << system_balance(EVO.value).at(1) << " "
+//      << system_balance(EVO.value).at(2) << " ";
 } FC_LOG_AND_RETHROW()
 
 

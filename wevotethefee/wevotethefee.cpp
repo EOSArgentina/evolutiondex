@@ -1,4 +1,7 @@
 #include "wevotethefee.hpp"
+#include "../utils.hpp"
+
+using namespace wevote;
 
 int wevotethefee::median(symbol_code pair_token){
     feetables tables( get_self(), pair_token.raw() );
@@ -16,20 +19,38 @@ int wevotethefee::median(symbol_code pair_token){
 
 void wevotethefee::updatefee(symbol_code pair_token) {
     action(permission_level{ get_self(), "active"_n }, "evolutiondex"_n, "changefee"_n,
-      make_tuple( pair_token, median(pair_token))).send(); 
+      make_tuple( pair_token, median(pair_token))).send();
 }
 
 void wevotethefee::onaddliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2){
-    add_balance(user, to_buy);
+//    check( get_first_receiver() == "evolutiondex"_n, "we only accept this kind of notification from evolutiondex");
+    if( get_first_receiver() == "evolutiondex"_n ) {add_balance(user, to_buy);}
 }
 
 void wevotethefee::onremliquidity(name user, asset to_sell, asset min_asset1, asset min_asset2){
-    add_balance(user, -to_sell);
+    //check( get_first_receiver() == "evolutiondex"_n, "we only accept this kind of notification from evolutiondex");
+    if( get_first_receiver() == "evolutiondex"_n ) {add_balance(user, -to_sell);}
 }
 
-void wevotethefee::ontransfer(const name& from, const name& to, const asset& quantity, const string&  memo ){
-    add_balance(from, -quantity);
-    add_balance(to, quantity);
+void wevotethefee::ononesideremli(name user, asset to_sell, extended_asset min_expected){
+//    check( get_first_receiver() == "evolutiondex"_n, "we only accept this kind of notification from evolutiondex");
+    if( get_first_receiver() == "evolutiondex"_n ) {add_balance(user, -to_sell);}
+}
+
+void wevotethefee::ontransfer(const name from, const name to, const asset quantity, const string memo ){
+    if (to == "evolutiondex"_n) {
+        string_view memosv(memo);
+        constexpr string_view ADD_LIQUIDITY = "add liquidity:";
+        if (starts_with(memosv, ADD_LIQUIDITY)) {
+            auto asset_string = trim( memosv.substr(ADD_LIQUIDITY.size()) );
+            auto to_add = asset_from_string(asset_string);
+            add_balance(from, to_add);
+        }
+    }
+    if (get_first_receiver() == "evolutiondex"_n) {
+        add_balance(from, -quantity);
+        add_balance(to, quantity);
+    }
 };
 
 asset wevotethefee::bring_balance(name user, symbol_code pair_token) {
@@ -65,7 +86,7 @@ void wevotethefee::closevote(name user, symbol_code pair_token) {
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( pair_token.raw());
     check( acnt != acnts.end(), "user is not voting" );
-    auto balance = bring_balance(user, pair_token);    
+    auto balance = bring_balance(user, pair_token);
     addvote( pair_token, acnt->fee_index_voted, -balance.amount );
     acnts.erase(acnt);
 }
@@ -75,7 +96,7 @@ void wevotethefee::closefeetable(symbol_code pair_token) {
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "table does not exist" );
     auto votes = table->votes;
-    auto is_empty = all_of(votes.begin(), votes.end(), 
+    auto is_empty = all_of(votes.begin(), votes.end(),
         [](const int & votes_number){return votes_number == 0;});
     check( is_empty, "table of votes is not empty");
     tables.erase(table);
@@ -87,7 +108,7 @@ void wevotethefee::openfeetable(name user, symbol_code pair_token) {
     check( table == tables.end(), "already opened" );
     vector<int64_t> zeros( fee_vector.size());
     tables.emplace( user, [&]( auto& a ){
-      a.pair_token = pair_token;  
+      a.pair_token = pair_token;
       a.votes = zeros;
     });
 }
@@ -109,5 +130,5 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
 
 int wevotethefee::get_index(int fee_value){
     auto it = lower_bound(fee_vector.begin(), fee_vector.end(), fee_value);
-    return it - fee_vector.begin(); 
+    return it - fee_vector.begin();
 }

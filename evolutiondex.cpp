@@ -9,7 +9,7 @@ void evolutiondex::openext( const name& user, const name& payer, const extended_
     require_auth( payer );
     evodexacnts acnts( get_self(), user.value );
     auto index = acnts.get_index<"extended"_n>();
-    const auto& acnt_balance = index.find( 
+    const auto& acnt_balance = index.find(
       make128key(ext_symbol.get_contract().value, ext_symbol.get_symbol().raw()) );
     if( acnt_balance == index.end() ) {
         acnts.emplace( payer, [&]( auto& a ){
@@ -44,7 +44,7 @@ void evolutiondex::ontransfer(name from, name to, asset quantity, string memo) {
 
     auto incoming = extended_asset{quantity, get_first_receiver()};
     string_view memosv(memo);
-    if ( starts_with(memosv, EXCHANGE) ) 
+    if ( starts_with(memosv, EXCHANGE) )
       memoexchange(from, incoming, memosv.substr(EXCHANGE.size()) );
     else if ( starts_with(memosv, ADD_LIQUIDITY) )
       one_side_addliquidity(from, incoming, trim(memosv.substr(ADD_LIQUIDITY.size())) );
@@ -65,7 +65,7 @@ void evolutiondex::withdraw(name user, name to, extended_asset to_withdraw, stri
       std::make_tuple( get_self(), to, to_withdraw.quantity, memo) ).send();
 }
 
-void evolutiondex::addliquidity(name user, asset to_buy, 
+void evolutiondex::addliquidity(name user, asset to_buy,
   asset max_asset1, asset max_asset2) {
     require_auth(user);
     check( (to_buy.amount > 0), "to_buy amount must be positive");
@@ -115,9 +115,9 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
       token->pool1.quantity.symbol}, token->pool1.contract};
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, P2, A, fee),
       token->pool2.quantity.symbol}, token->pool2.contract};
-    check( (to_pay1.quantity.symbol == max_asset1.symbol) && 
+    check( (to_pay1.quantity.symbol == max_asset1.symbol) &&
            (to_pay2.quantity.symbol == max_asset2.symbol), "incorrect symbol");
-    check( (to_pay1.quantity.amount <= max_asset1.amount) && 
+    check( (to_pay1.quantity.amount <= max_asset1.amount) &&
            (to_pay2.quantity.amount <= max_asset2.amount), "available is less than expected");
 
     add_signed_ext_balance(user, -to_pay1);
@@ -132,11 +132,11 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     if (token-> supply.amount == 0) statstable.erase(token);
 }
 
-void evolutiondex::exchange( name user, symbol_code pair_token, 
+void evolutiondex::exchange( name user, symbol_code pair_token,
   extended_asset ext_asset_in, asset min_expected) {
     require_auth(user);
     check( ((ext_asset_in.quantity.amount > 0) && (min_expected.amount >= 0)) ||
-           ((ext_asset_in.quantity.amount < 0) && (min_expected.amount <= 0)), 
+           ((ext_asset_in.quantity.amount < 0) && (min_expected.amount <= 0)),
            "ext_asset_in must be nonzero and min_expected must have same sign or be zero");
     auto ext_asset_out = process_exch(pair_token, ext_asset_in, min_expected);
     add_signed_ext_balance(user, -ext_asset_in);
@@ -149,7 +149,7 @@ extended_asset evolutiondex::process_exch(symbol_code pair_token,
     const auto token = statstable.find( pair_token.raw() );
     check ( token != statstable.end(), "pair token does not exist" );
     bool in_first;
-    if ((token->pool1.get_extended_symbol() == ext_asset_in.get_extended_symbol()) && 
+    if ((token->pool1.get_extended_symbol() == ext_asset_in.get_extended_symbol()) &&
         (token->pool2.quantity.symbol == min_expected.symbol)) {
         in_first = true;
     } else if ((token->pool1.quantity.symbol == min_expected.symbol) &&
@@ -158,7 +158,7 @@ extended_asset evolutiondex::process_exch(symbol_code pair_token,
     }
     else check(false, "extended_symbol mismatch");
     int64_t P_in, P_out;
-    if (in_first) { 
+    if (in_first) {
       P_in = token-> pool1.quantity.amount;
       P_out = token-> pool2.quantity.amount;
     } else {
@@ -169,7 +169,7 @@ extended_asset evolutiondex::process_exch(symbol_code pair_token,
     int64_t A_out = compute(-A_in, P_out, P_in + A_in, token->fee);
     check(min_expected.amount <= -A_out, "available is less than expected");
     extended_asset ext_asset1, ext_asset2, ext_asset_out;
-    if (in_first) { 
+    if (in_first) {
       ext_asset1 = ext_asset_in;
       ext_asset2 = extended_asset{A_out, token-> pool2.get_extended_symbol()};
       ext_asset_out = -ext_asset2;
@@ -206,24 +206,22 @@ asset evolutiondex::one_side_add_signed_liq(name user, asset to_add, bool is_buy
     const auto& token = statstable.find( to_add.symbol.code().raw() );
 
     check ( token != statstable.end(), "pair token does not exist" );
-    check ( (max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) || 
-      (max_ext_asset.get_extended_symbol() == token->pool2.get_extended_symbol() ) , 
-      "token to provide must match one side of the pool" );
-
     auto S = token-> supply.amount;
     int64_t P = 0;
     if ( max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) {
       P = token-> pool1.quantity.amount;
-    } else {
+    } else 
+    if ( max_ext_asset.get_extended_symbol() == token->pool2.get_extended_symbol() ) {
       P = token-> pool2.quantity.amount;
-    }
+    } else check( false, "token to provide must match one side of the pool");
     auto denominator = -compute(-S, S, 2 * S + to_add.amount, 0);
-    auto to_pay_amount = compute(to_add.amount, P, denominator, token->fee );
+    int fee = is_buying? token->fee : 0;
+    auto to_pay_amount = compute(to_add.amount, P, denominator, fee );
     auto asset_to_pay = asset{to_pay_amount, max_ext_asset.quantity.symbol };
     check( max_ext_asset.quantity >= asset_to_pay, "available is less than expected");
 
     auto to_pay = extended_asset{asset_to_pay, max_ext_asset.contract };
-    if (token->fee_contract) require_recipient(token->fee_contract); // agregar notification handler a wevotethefee
+    if (token->fee_contract) require_recipient(token->fee_contract);
     add_balance(user, to_add, user);
     if ( max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) {
       statstable.modify( token, same_payer, [&]( auto& a ) {
@@ -239,28 +237,29 @@ asset evolutiondex::one_side_add_signed_liq(name user, asset to_add, bool is_buy
     return asset_to_pay;
 }
 
-void evolutiondex::one_side_addliquidity(name user, extended_asset max_to_pay, string_view details){
-    auto to_buy = asset_from_string(details);
+void evolutiondex::one_side_addliquidity(name user, extended_asset max_to_pay, string_view quantity){
+    auto to_buy = asset_from_string(quantity);
     check( (to_buy.amount > 0), "to_buy amount must be positive");
     auto asset_to_pay = one_side_add_signed_liq(user, to_buy, true, max_to_pay);
     if (max_to_pay.quantity > asset_to_pay) {
         string memo = "";
-        action(permission_level{ get_self(), "active"_n }, 
+        action(permission_level{ get_self(), "active"_n },
           max_to_pay.contract, "transfer"_n,
-          std::make_tuple( get_self(), user, max_to_pay.quantity - asset_to_pay, memo) 
+          std::make_tuple( get_self(), user, max_to_pay.quantity - asset_to_pay, memo)
         ).send();
     }
 }
 
-void evolutiondex::onesideremli(name user, asset to_sell, extended_asset min_expected){
+// In onesideremli the variable min_expected has to be an extended_asset, because otherwise 
+// it can be ambiguous in the case where pool1 and pool2 has same symbol but different contract.
+void evolutiondex::onesideremli(name user, asset to_sell, extended_asset min_expected, string memo){
     require_auth(user);
     check(to_sell.amount > 0, "to_sell amount must be positive");
     check( min_expected.quantity.amount >= 0, "min_asset must be nonnegative");
     auto asset_to_receive = -one_side_add_signed_liq(user, -to_sell, false, min_expected);
-    string memo = "";
-    action(permission_level{ get_self(), "active"_n }, 
+    action(permission_level{ get_self(), "active"_n },
       min_expected.contract, "transfer"_n,
-      std::make_tuple( get_self(), user, asset_to_receive, memo) 
+      std::make_tuple( get_self(), user, asset_to_receive, memo)
     ).send();
 }
 

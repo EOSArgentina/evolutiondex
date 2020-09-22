@@ -22,10 +22,10 @@ struct contracts {
    static std::vector<uint8_t> evolutiondex_wasm() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/../evolutiondex.wasm"); }
    static std::vector<char>    evolutiondex_abi() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/../evolutiondex.abi"); }
 
-   static std::vector<uint8_t> badtoken_wasm() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/../badtoken.wasm"); }
-   static std::vector<char>    badtoken_abi() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/../badtoken.abi"); }
+   static std::vector<uint8_t> badtoken_wasm() { return read_wasm("${CMAKE_CURRENT_SOURCE_DIR}/badtoken/badtoken.wasm"); }
+   static std::vector<char>    badtoken_abi() { return read_abi("${CMAKE_CURRENT_SOURCE_DIR}/badtoken/badtoken.abi"); }
 
-   static std::vector<uint8_t> wevotethefee_wasm() { return read_wasm("/home/sergio/Dropbox/eos/contracts/evo/wevotethefee/wevotethefee.wasm"); }
-   static std::vector<char>    wevotethefee_abi() { return read_abi("/home/sergio/Dropbox/eos/contracts/evo/wevotethefee/wevotethefee.abi"); }
+   static std::vector<uint8_t> wevotethefee_wasm() { return read_wasm("/home/sergio/MEGA/eos/contracts/evo/wevotethefee/wevotethefee.wasm"); }
+   static std::vector<char>    wevotethefee_abi() { return read_abi("/home/sergio/MEGA/eos/contracts/evo/wevotethefee/wevotethefee.abi"); }
 }; 
 }} //ns eosio::testing
