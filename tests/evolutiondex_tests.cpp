@@ -508,10 +508,18 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
       transfer( N(anothertoken), N(alice), N(evolutiondex), 
         asset::from_string("1.0000 VOICE"), "add liquidity: 10.0000 EVO")
     );
-//  unreachable assert: wasm_assert_msg("to_buy amount must be positive")
+//  unreachable assert in one_side_addliquidity: wasm_assert_msg("to_buy amount must be positive")
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("to_sell amount must be positive"), 
         onesideremli( N(alice), asset::from_string("-5.6000 EVO"), 
         extend(asset::from_string("0.1000 EOS")), "")
+    );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("min_expected must be nonnegative"), 
+        onesideremli( N(alice), asset::from_string("5.6000 EVO"), 
+        extend(asset::from_string("-0.1000 EOS")), "")
+    );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
+        onesideremli( N(alice), asset::from_string("5.6000 EVO"), 
+        extend(asset::from_string("100.0000 EOS")), "")
     );
 
 // first side add    
@@ -526,6 +534,7 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     auto new_alice_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
     BOOST_REQUIRE_EQUAL( true, old_alice_eos_balance == 20102 + new_alice_eos_balance);
     BOOST_REQUIRE_EQUAL( true, is_increasing( old_system_balance, expected_system_balance ) );
+// test Alice evotoken balance, and check overdraw case.
 
 // second side add
     old_system_balance = expected_system_balance;

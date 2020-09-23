@@ -222,7 +222,7 @@ asset evolutiondex::one_side_add_signed_liq(name user, asset to_add, bool is_buy
 
     auto to_pay = extended_asset{asset_to_pay, max_ext_asset.contract };
     if (token->fee_contract) require_recipient(token->fee_contract);
-    add_balance(user, to_add, user);
+    (to_add.amount > 0)? add_balance(user, to_add, user) : sub_balance(user, -to_add);
     if ( max_ext_asset.get_extended_symbol() == token->pool1.get_extended_symbol() ) {
       statstable.modify( token, same_payer, [&]( auto& a ) {
         a.supply += to_add;
@@ -255,8 +255,8 @@ void evolutiondex::one_side_addliquidity(name user, extended_asset max_to_pay, s
 void evolutiondex::onesideremli(name user, asset to_sell, extended_asset min_expected, string memo){
     require_auth(user);
     check(to_sell.amount > 0, "to_sell amount must be positive");
-    check( min_expected.quantity.amount >= 0, "min_asset must be nonnegative");
-    auto asset_to_receive = -one_side_add_signed_liq(user, -to_sell, false, min_expected);
+    check( min_expected.quantity.amount >= 0, "min_expected must be nonnegative");
+    auto asset_to_receive = -one_side_add_signed_liq(user, -to_sell, false, -min_expected);
     action(permission_level{ get_self(), "active"_n },
       min_expected.contract, "transfer"_n,
       std::make_tuple( get_self(), user, asset_to_receive, memo)
