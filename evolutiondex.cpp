@@ -200,6 +200,7 @@ void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset initia
 extended_asset initial_pool2, int initial_fee, name fee_contract)
 {
     require_auth( user );
+    require_auth( get_self() );
     check((initial_pool1.quantity.amount > 0) && (initial_pool2.quantity.amount > 0), "Both assets must be positive");
     check((initial_pool1.quantity.amount < INIT_MAX) && (initial_pool2.quantity.amount < INIT_MAX), "Initial amounts must be less than 10^15");
     int128_t geometric_mean = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));

@@ -127,14 +127,22 @@ public:
     }
     action_result inittoken( name user, symbol new_symbol, extended_asset initial_pool1,
       extended_asset initial_pool2, int initial_fee, name fee_contract){
-        return push_action( N(evolutiondex), user, N(inittoken), mvo()
+        std::vector<name> auths{user, N(evolutiondex)};
+        try {
+        eosio::testing::base_tester::push_action( N(evolutiondex), N(inittoken), auths, mvo()
           ( "user", user)
           ("new_symbol", new_symbol)
           ("initial_pool1", initial_pool1)
           ("initial_pool2", initial_pool2) 
           ("initial_fee", initial_fee)
           ("fee_contract", fee_contract)
-        );
+        , 100, 0);
+      } catch (const fc::exception& ex) {
+         edump((ex));
+         edump((ex.to_detail_string()));
+         return error(ex.top_message());
+      }
+      return success();
     }
     action_result addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2) {
         return push_action( N(evolutiondex), user, N(addliquidity), mvo()
@@ -671,6 +679,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) tr
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
 } FC_LOG_AND_RETHROW()
 
+
 BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
@@ -805,6 +814,13 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
       extend(asset::from_string("0.0003 EOS")) ));
 
     // INITTOKEN
+    BOOST_REQUIRE_EQUAL( error("missing authority of evolutiondex"), 
+      push_action( N(evolutiondex), N(alice), N(inittoken), mvo()
+        ("user", N(alice)) ("new_symbol", EVO4)
+        ("initial_pool1", extend(asset::from_string("1.0000 EOS")))
+        ("initial_pool2", extend(asset::from_string("1.0000 ECO")))
+        ("initial_fee", 1) ("fee_contract", N(carol)) )
+    );
     BOOST_REQUIRE_EQUAL( error("missing authority of alice"), 
       push_action( N(evolutiondex), N(bob), N(inittoken), mvo()
         ("user", N(alice)) ("new_symbol", EVO4)
@@ -838,6 +854,7 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
+    produce_blocks();
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("token symbol already exists"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
@@ -911,7 +928,6 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
       asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
 
 } FC_LOG_AND_RETHROW()
-
 
 
 BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
