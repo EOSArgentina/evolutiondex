@@ -33,7 +33,8 @@ namespace evolution {
            const asset& quantity, const string&  memo );
          [[eosio::action]] void open( const name& owner, const symbol& symbol, const name& ram_payer );
          [[eosio::action]] void close( const name& owner, const symbol& symbol );
-         
+         [[eosio::action]] void indexpair(name user, symbol evo_symbol); // This action is only temporarily useful
+
       private:
 
          struct [[eosio::table]] account {
@@ -49,8 +50,6 @@ namespace evolution {
               make128key(balance.contract.value, balance.quantity.symbol.raw() ); }
          };
 
-         static uint128_t make128key(uint64_t a, uint64_t b);
-
          struct [[eosio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
@@ -62,11 +61,24 @@ namespace evolution {
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
+         struct [[eosio::table]] index_struct{
+            symbol evo_symbol;
+            checksum256 id_256;
+            uint64_t primary_key()const { return evo_symbol.code().raw(); }
+            checksum256 secondary_key()const { return id_256; }
+         };
+
          typedef eosio::multi_index< "evodexacnts"_n, evodexaccount,
          indexed_by<"extended"_n, const_mem_fun<evodexaccount, uint128_t, 
            &evodexaccount::secondary_key>> > evodexacnts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
+         typedef eosio::multi_index< "evoindex"_n, index_struct,
+         indexed_by<"extended"_n, const_mem_fun<index_struct, checksum256, 
+           &index_struct::secondary_key>> > evoindexes;
          typedef eosio::multi_index< "accounts"_n, account > accounts;
+
+         static uint128_t make128key(uint64_t a, uint64_t b);
+         static checksum256 make256key(uint64_t a, uint64_t b, uint64_t c, uint64_t d);
 
          void add_signed_ext_balance( const name& owner, const extended_asset& value );
          void add_signed_liq(name user, asset to_buy, bool is_buying, asset max_asset1, asset max_asset2);
@@ -74,7 +86,7 @@ namespace evolution {
          extended_asset process_exch(symbol_code evo_token, extended_asset paying, asset min_expected);
          int64_t compute(int64_t x, int64_t y, int64_t z, int fee);
          asset string_to_asset(string input);
-
+         void placeindex(name user, symbol evo_symbol, extended_asset pool1, extended_asset pool2 );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
          void sub_balance( const name& owner, const asset& value );
    };
