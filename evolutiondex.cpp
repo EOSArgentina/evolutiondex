@@ -106,7 +106,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     auto P1 = token-> pool1.quantity.amount;
     auto P2 = token-> pool2.quantity.amount;
 
-    int fee = is_buying? token->fee : 0;
+    int fee = is_buying? 1 : 0;
     auto to_pay1 = extended_asset{ asset{compute(to_add.amount, P1, A, fee),
       token->pool1.quantity.symbol}, token->pool1.contract};
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, P2, A, fee),

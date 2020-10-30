@@ -58,6 +58,7 @@ void wevotethefee::votefee(name user, symbol_code pair_token, int fee_voted){
         });
     }
     addvote(pair_token, fee_index_voted, balance.amount);
+    updatefee(pair_token);
 }
 
 void wevotethefee::closevote(name user, symbol_code pair_token) {
@@ -95,7 +96,10 @@ void wevotethefee::openfeetable(name user, symbol_code pair_token) {
 void wevotethefee::add_balance(name user, asset to_add) {
     feeaccounts acnts( get_self(), user.value );
     auto acnt = acnts.find( to_add.symbol.code().raw());
-    if (acnt != acnts.end()) addvote( acnt->pair_token, acnt->fee_index_voted, to_add.amount);
+    if (acnt != acnts.end()) {
+        addvote( acnt->pair_token, acnt->fee_index_voted, to_add.amount);
+        updatefee( to_add.symbol.code() );
+    }
 }
 
 void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount) {
@@ -109,5 +113,5 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
 
 int wevotethefee::get_index(int fee_value){
     auto it = lower_bound(fee_vector.begin(), fee_vector.end(), fee_value);
-    return it - fee_vector.begin(); 
+    return clamp(it - fee_vector.begin(), 5, 11); 
 }
