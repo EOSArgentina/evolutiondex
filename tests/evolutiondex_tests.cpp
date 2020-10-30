@@ -1148,6 +1148,9 @@ BOOST_FIXTURE_TEST_CASE( indextable, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(table["id_256"], "34e996aaf9a4153000004543494f56045530ea033482a60000000000534f4504");
     BOOST_REQUIRE_EQUAL(table["evo_symbol"], "4,EVO");
 
+// test whether the 256key is collision free, at least in some
+// simple cases as changing one contract, or one symbol, one by one.
+
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END() 
