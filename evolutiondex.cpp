@@ -203,19 +203,21 @@ extended_asset initial_pool2, int initial_fee, name fee_contract)
     require_auth( get_self() );
     check((initial_pool1.quantity.amount > 0) && (initial_pool2.quantity.amount > 0), "Both assets must be positive");
     check((initial_pool1.quantity.amount < INIT_MAX) && (initial_pool2.quantity.amount < INIT_MAX), "Initial amounts must be less than 10^15");
+    uint8_t new_precision = ( initial_pool1.quantity.symbol.precision() + initial_pool2.quantity.symbol.precision() ) / 2;
+    check( new_symbol.precision() == new_precision, "new_symbol precision must be (precision1 + precision2) / 2" );
     int128_t geometric_mean = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
     check( initial_pool1.get_extended_symbol() != initial_pool2.get_extended_symbol(), "extended symbols must be different");
 
-    stats statstable( get_self(), new_token.symbol.code().raw() );
-    const auto& token = statstable.find( new_token.symbol.code().raw() );
+    stats statstable( get_self(), new_symbol.code().raw() );
+    const auto& token = statstable.find( new_symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
     check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
     check( fee_contract == "wevotethefee"_n, "fee_contract must be wevotethefee");
 
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
-        a.max_supply = asset{MAX,new_token.symbol};
+        a.max_supply = asset{MAX,new_symbol};
         a.issuer = get_self();
         a.pool1 = initial_pool1;
         a.pool2 = initial_pool2;

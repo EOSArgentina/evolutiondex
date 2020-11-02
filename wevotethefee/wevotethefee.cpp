@@ -8,15 +8,17 @@ int wevotethefee::median(symbol_code pair_token){
     vector <int64_t> partial_sum_vec(votes.size());
     partial_sum(votes.begin(), votes.end(), partial_sum_vec.begin());
     int64_t sum = partial_sum_vec.back();
-    check( sum > 0, "there are no votes");
+    if (sum == 0) return -1;
     auto it = lower_bound(partial_sum_vec.begin(), partial_sum_vec.end(), sum / 2);
     auto index = it - partial_sum_vec.begin();
     return fee_vector.at(index);
 }
 
 void wevotethefee::updatefee(symbol_code pair_token) {
-    action(permission_level{ get_self(), "active"_n }, "evolutiondex"_n, "changefee"_n,
-      make_tuple( pair_token, median(pair_token))).send(); 
+    int new_fee = median(pair_token);
+    if (new_fee >= 0) action(permission_level{ get_self(), "active"_n },
+      "evolutiondex"_n, "changefee"_n,
+      make_tuple( pair_token, new_fee )).send();
 }
 
 void wevotethefee::onaddliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2){
