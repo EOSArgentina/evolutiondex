@@ -95,8 +95,9 @@ summary: '{{nowrap user}} buys an evotoken by adding liquidity to pools'
 The first asset to be paid by {{user}} is computed as x + y, where
 
 x = pool1 * {{to_buy}} / supply, up to the precision of the symbol of pool1 rounded upward.
-y = x * fee / 10000, up to the same precision as x, again rounded upward.
-The variables pool1, supply, fee denote the parameters pool1, supply, fee associated to the token {{asset_to_symbol_code to_buy}} respectively, at the moment of operation.
+y = x / 10000, up to the same precision as x, again rounded upward.
+The variables pool1 and supply denote the values pool1 and supply associated to 
+the token {{asset_to_symbol_code to_buy}} respectively, at the moment of operation.
 
 The second asset to be paid by {{user}} is computed analogously.
 

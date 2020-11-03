@@ -10,16 +10,21 @@ Evolutiondex follows the line initiated by Bancor and Uniswap, but with some des
 
 In evolutiondex, each trading pair has an associated fee value that might be variable. The value of evotokens rises as they collect fees from exchange and addition of liquidity operations. The action of removing liquidity (selling evotokens) is free of charge.
 
-2- Initial fee and fee governance. A fee value is set at initialization of each trading pair. In addition and optionally, a name of a smart contract is chosen: the fee contract. The fee value might be controlled in the future by that smart contract.
-One good choice for the fee governance is through voting of the evotoken holders.However, in some cases, a well known dictator might be a good choice as well. Interestingly, the evolutiondex smart contract is designed in such a way that the specific method of fee governance for each evotoken is decoupled from the rest of the functionality.
-
+2- Initial fee and fee governance. A fee value is set at initialization of each trading pair. The contract wevotethefee will be able to control the fee value through
+a voting mechanism. The liquidity providers can vote for a value between
+0.1% and 1%, their vote will be weighted according to their stake.
+The fee value will be set to the median of the votes. The voting tables
+are updated each time a liquidity provider modifies its balance.
+A tiny fee of 0.01% is charged when providing liquidity in order
+to protect liquidity providers from attacks to the fee value.
 
 **On the formulas determining prices**
 
 We chose to follow the usual criterion: after an exchange operation for a given pair, the product of the amounts in the pools of the corresponding pair must remain equal before the fee is charged. After the fee, that product will rise accordingly. All the rounding errors will favour the pools in order to avoid the gaming of the system. This criterion completely determines
 the price behaviour. Notice that whenever the amount to exchange is small compared to the pool sizes the price is approximately equal to the quotient between the amounts in the pools.
 
-When adding or removing liquidity, the (again standard) criterion is to keep fixed the ratios between minted evotokens and the amounts in the pools that back their value. Actually a correction is in order for the case of adding liquidity: the fee charged will increase the value of the evotoken afterwards.
+When adding or removing liquidity, the (again standard) criterion is to keep fixed the ratios between minted evotokens and the amounts in the pools that back their value. Actually a small correction is in order for the case of adding liquidity: 
+the 0.01% fee charged will slightly increase the value of the evotoken afterwards.
 
 
 **Some considerations from the perspective of liquidity providers**

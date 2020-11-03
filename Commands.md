@@ -31,7 +31,7 @@ Withdraw funds from your opened channels, to the account "TO":
 
 Create the EOS/PESO evotoken. Set the initial liquidity, the initial fee for the trading pair and the fee controller.
 
-    cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, {"contract":"pesocontract", "quantity":"1.0000 PESO"}, 10, "FEE_CONTROLLER"]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, {"contract":"pesocontract", "quantity":"1.0000 PESO"}, 10, "wevotethefee"]' -p YOUR_ACCOUNT
 
 Check your evotokens balance:
 
@@ -158,11 +158,6 @@ where the file addliquidity.json contains:
 The same idea applies to the operations of removing liquidity and inittoken.
 Typically, a graphical user interface will perform this kind of multiaction transactions.
 
-Finally, to change the fee for operating through EOSPESO run:
-
-    cleos push action evolutiondex changefee '["4,EOSPESO", "37"]' -p FEE_CONTROLLER
-
-and the fee will now be set to 0.37%. Or you can configure a contract to perform
-the *changefee* action.
-
+The fee value will be governed by the liquidity providers using the
+smart contract wevotethefee.
 Check the commands of wevotethefee [here](wevotethefee/vote_commands.md).

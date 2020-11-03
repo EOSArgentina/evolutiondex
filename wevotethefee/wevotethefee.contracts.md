@@ -34,7 +34,9 @@ summary: 'Vote fee value for a specific pair token'
 
 {{user}} votes a fee value for {{pair_token}} of evolutiondex.
 The exact value voted will be equal to the least of the numbers
-1,2,3,5,7,10,15,20,30,50,75,100,150,200,300 that is greater than or equal to {{fee_voted}}. One unit of fee value is equal to 0.01%.
+10,15,20,30,50,75,100 that is greater than or equal to {{fee_voted}},
+or 100 in case {{fee_voted}} is larger than 100.
+One unit of fee value is equal to 0.01%.
 
 The authorization of {{user}} is required, who will pay for the RAM required.
 
