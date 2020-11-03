@@ -6,9 +6,7 @@ exchanges and offers an interesting financial position for the liquidity provide
 
 Evolutiondex follows the line initiated by Bancor and Uniswap, but with some design improvements that we explain below.
 
-1- Evotokens. For each registered pair there will be a standard token backed by the assets in the corresponding pair of pools. These new tokens can be freely transferred, facilitating the access and management of the investment position. From now on we will call these tokens "evotokens".
-
-In evolutiondex, each trading pair has an associated fee value that might be variable. The value of evotokens rises as they collect fees from exchange and addition of liquidity operations. The action of removing liquidity (selling evotokens) is free of charge.
+1- Evotokens. For each registered pair there will be a standard token backed by the assets in the corresponding pool. These new tokens can be freely transferred, facilitating the access and management of the investment position. We can call these tokens "evotokens".
 
 2- Initial fee and fee governance. A fee value is set at initialization of each trading pair. The contract wevotethefee will be able to control the fee value through
 a voting mechanism. The liquidity providers can vote for a value between
@@ -16,7 +14,8 @@ a voting mechanism. The liquidity providers can vote for a value between
 The fee value will be set to the median of the votes. The voting tables
 are updated each time a liquidity provider modifies its balance.
 A tiny fee of 0.01% is charged when providing liquidity in order
-to protect liquidity providers from attacks to the fee value.
+to protect previous liquidity providers from attacks to the fee value.
+The action of removing liquidity is free of charge.
 
 **On the formulas determining prices**
 
