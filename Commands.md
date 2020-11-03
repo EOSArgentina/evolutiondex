@@ -160,4 +160,4 @@ Typically, a graphical user interface will perform this kind of multiaction tran
 
 The fee value will be governed by the liquidity providers using the
 smart contract wevotethefee.
-Check the commands of wevotethefee [here](wevotethefee/vote_commands.md).
+Check the commands of wevotethefee [here](wevotethefee/README.md).
