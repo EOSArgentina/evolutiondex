@@ -31,8 +31,8 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
       const vector <int> fee_vector{1,2,3,5,7,10,15,20,30,50,75,100,150,200,300};
       int median(symbol_code pair_token);
       int get_index(int number);
-      void addvote(symbol_code pair_token, int fee_index, int64_t amount);
-      void add_balance(name user, asset to_add);
+      void addvote(symbol_code pair_token, int fee_index, int64_t amount, bool need_update);
+      void add_balance(name user, asset to_add, bool need_update);
       asset bring_balance(name user, symbol_code pair_token);
 
       struct [[eosio::table]] feeaccount {
