@@ -28,7 +28,15 @@ class [[eosio::contract("wevotethefee")]] wevotethefee : public contract {
 
    private:
 
-      const vector <int> fee_vector{1,2,3,5,7,10,15,20,30,50,75,100,150,200,300};
+      static constexpr std::array<int, 15> FEE_VECTOR{1,2,3,5,7,10,15,20,30,50,75,100,150,200,300};
+      static const int DEFAULT_FEE_INDEX = 5;
+      static const int MIN_FEE_INDEX = 5;
+      static const int MAX_FEE_INDEX = 11;
+      static_assert( (0 <= DEFAULT_FEE_INDEX) && (DEFAULT_FEE_INDEX < FEE_VECTOR.size() ), "invalid index" );
+      static_assert( (0 <= MIN_FEE_INDEX) && (MIN_FEE_INDEX < FEE_VECTOR.size() ), "invalid index" );
+      static_assert( (0 <= MAX_FEE_INDEX) && (MAX_FEE_INDEX < FEE_VECTOR.size() ), "invalid index" );
+      static_assert( MIN_FEE_INDEX < MAX_FEE_INDEX, "min_fee must be smaller than max_fee" );
+
       int median(symbol_code pair_token);
       int get_index(int number);
       void addvote(symbol_code pair_token, int fee_index, int64_t amount, bool need_update);

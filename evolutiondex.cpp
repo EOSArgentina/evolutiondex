@@ -212,7 +212,7 @@ extended_asset initial_pool2, int initial_fee, name fee_contract)
     stats statstable( get_self(), new_symbol.code().raw() );
     const auto& token = statstable.find( new_symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
-    check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
+    check( initial_fee == 10, "initial_fee must be 10");
     check( fee_contract == "wevotethefee"_n, "fee_contract must be wevotethefee");
 
     statstable.emplace( user, [&]( auto& a ) {
@@ -255,7 +255,6 @@ void evolutiondex::placeindex(name user, symbol evo_symbol,
 }
 
 void evolutiondex::changefee(symbol_code pair_token, int newfee) {
-    check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), pair_token.raw() );
     const auto& token = statstable.find( pair_token.raw() );
     check ( token != statstable.end(), "pair token does not exist" );

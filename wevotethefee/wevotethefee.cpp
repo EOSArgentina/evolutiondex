@@ -8,15 +8,15 @@ int wevotethefee::median(symbol_code pair_token){
     vector <int64_t> partial_sum_vec(votes.size());
     partial_sum(votes.begin(), votes.end(), partial_sum_vec.begin());
     int64_t sum = partial_sum_vec.back();
-    if (sum == 0) return -1;
+    if (sum == 0) return FEE_VECTOR.at(DEFAULT_FEE_INDEX);
     auto it = lower_bound(partial_sum_vec.begin(), partial_sum_vec.end(), sum / 2);
     auto index = it - partial_sum_vec.begin();
-    return fee_vector.at(index);
+    return FEE_VECTOR.at(index);
 }
 
 void wevotethefee::updatefee(symbol_code pair_token) {
     int new_fee = median(pair_token);
-    if (new_fee >= 0) action(permission_level{ get_self(), "active"_n },
+    action(permission_level{ get_self(), "active"_n },
       "evolutiondex"_n, "changefee"_n,
       make_tuple( pair_token, new_fee )).send();
 }
@@ -42,7 +42,8 @@ asset wevotethefee::bring_balance(name user, symbol_code pair_token) {
 }
 
 void wevotethefee::votefee(name user, symbol_code pair_token, int fee_voted){
-    check( (1 <= fee_voted) && (fee_voted <= 300), "only values between 1 and 300 allowed");
+    check( (FEE_VECTOR.at(MIN_FEE_INDEX) <= fee_voted) && 
+           (fee_voted <= FEE_VECTOR.at(MAX_FEE_INDEX)), "only values between 10 and 100 are allowed");
     int fee_index_voted = get_index(fee_voted);
     require_auth(user);
     feeaccounts acnts( get_self(), user.value );
@@ -87,7 +88,7 @@ void wevotethefee::openfeetable(name user, symbol_code pair_token) {
     feetables tables( get_self(), pair_token.raw() );
     auto table = tables.find( pair_token.raw());
     check( table == tables.end(), "already opened" );
-    vector<int64_t> zeros( fee_vector.size());
+    vector<int64_t> zeros( FEE_VECTOR.size());
     tables.emplace( user, [&]( auto& a ){
       a.pair_token = pair_token;  
       a.votes = zeros;
@@ -114,6 +115,6 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
 }
 
 int wevotethefee::get_index(int fee_value){
-    auto it = lower_bound(fee_vector.begin(), fee_vector.end(), fee_value);
-    return clamp(it - fee_vector.begin(), 5, 11); 
+    auto it = lower_bound(FEE_VECTOR.begin(), FEE_VECTOR.end(), fee_value);
+    return clamp(it - FEE_VECTOR.begin(), MIN_FEE_INDEX, MAX_FEE_INDEX);
 }
