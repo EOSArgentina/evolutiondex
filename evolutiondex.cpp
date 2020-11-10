@@ -106,7 +106,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     auto P1 = token-> pool1.quantity.amount;
     auto P2 = token-> pool2.quantity.amount;
 
-    int fee = is_buying? token->fee : 0;
+    int fee = is_buying? ADD_LIQUIDITY_FEE : 0;
     auto to_pay1 = extended_asset{ asset{compute(to_add.amount, P1, A, fee),
       token->pool1.quantity.symbol}, token->pool1.contract};
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, P2, A, fee),
@@ -125,7 +125,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
       a.pool1 += to_pay1;
       a.pool2 += to_pay2;
     });
-    if (token-> supply.amount == 0) statstable.erase(token);
+    check(token->supply.amount != 0, "the pool cannot be left empty");
 }
 
 void evolutiondex::exchange( name user, symbol_code pair_token, 
@@ -200,20 +200,24 @@ void evolutiondex::inittoken(name user, symbol new_symbol, extended_asset initia
 extended_asset initial_pool2, int initial_fee, name fee_contract)
 {
     require_auth( user );
+    require_auth( get_self() );
     check((initial_pool1.quantity.amount > 0) && (initial_pool2.quantity.amount > 0), "Both assets must be positive");
     check((initial_pool1.quantity.amount < INIT_MAX) && (initial_pool2.quantity.amount < INIT_MAX), "Initial amounts must be less than 10^15");
+    uint8_t new_precision = ( initial_pool1.quantity.symbol.precision() + initial_pool2.quantity.symbol.precision() ) / 2;
+    check( new_symbol.precision() == new_precision, "new_symbol precision must be (precision1 + precision2) / 2" );
     int128_t geometric_mean = sqrt(int128_t(initial_pool1.quantity.amount) * int128_t(initial_pool2.quantity.amount));
     auto new_token = asset{int64_t(geometric_mean), new_symbol};
     check( initial_pool1.get_extended_symbol() != initial_pool2.get_extended_symbol(), "extended symbols must be different");
-    stats statstable( get_self(), new_token.symbol.code().raw() );
-    const auto& token = statstable.find( new_token.symbol.code().raw() );
+
+    stats statstable( get_self(), new_symbol.code().raw() );
+    const auto& token = statstable.find( new_symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
-    check( (0 <= initial_fee) && (initial_fee <= 500), "initial fee out of reasonable range");
-    check( is_account(fee_contract) || !fee_contract, "fee_contract account must exist or be empty");
+    check( initial_fee == DEFAULT_FEE, "initial_fee must be 10");
+    check( fee_contract == "wevotethefee"_n, "fee_contract must be wevotethefee");
 
     statstable.emplace( user, [&]( auto& a ) {
         a.supply = new_token;
-        a.max_supply = asset{MAX,new_token.symbol};
+        a.max_supply = asset{MAX,new_symbol};
         a.issuer = get_self();
         a.pool1 = initial_pool1;
         a.pool2 = initial_pool2;
@@ -221,17 +225,39 @@ extended_asset initial_pool2, int initial_fee, name fee_contract)
         a.fee_contract = fee_contract;
     } );
 
+    placeindex(user, new_symbol, initial_pool1, initial_pool2 );
     add_balance(user, new_token, user);
     add_signed_ext_balance(user, -initial_pool1);
     add_signed_ext_balance(user, -initial_pool2);
 }
 
+void evolutiondex::indexpair(name user, symbol evo_symbol) {
+    stats statstable( get_self(), evo_symbol.code().raw() );
+    const auto& token = statstable.find( evo_symbol.code().raw() );
+    check ( token != statstable.end(), "token symbol does not exist" );
+    auto pool1 = token->pool1;
+    auto pool2 = token->pool2;
+    placeindex(user, evo_symbol, pool1, pool2);
+}
+
+void evolutiondex::placeindex(name user, symbol evo_symbol,
+  extended_asset pool1, extended_asset pool2 ) {
+    auto id_256 = make256key(pool1.contract.value, pool1.quantity.symbol.raw(),
+                             pool2.contract.value, pool2.quantity.symbol.raw());
+    evoindexes indextable( get_self(), get_self().value );
+    auto index = indextable.get_index<"extended"_n>();
+    const auto& info = index.find( id_256 );
+    check( info == index.end(), "the pool is already indexed");
+    indextable.emplace( user, [&]( auto& a ){
+        a.evo_symbol = evo_symbol;
+        a.id_256 = id_256;
+    });
+}
+
 void evolutiondex::changefee(symbol_code pair_token, int newfee) {
-    check( (0 <= newfee) && (newfee <= 500), "new fee out of reasonable range");
     stats statstable( get_self(), pair_token.raw() );
     const auto& token = statstable.find( pair_token.raw() );
     check ( token != statstable.end(), "pair token does not exist" );
-    check( (token->fee_contract) != ""_n, "this pair token has fixed fee parameter" );
     require_auth(token->fee_contract);
     statstable.modify( token, same_payer, [&]( auto& a ) {
       a.fee = newfee;
@@ -242,6 +268,13 @@ uint128_t evolutiondex::make128key(uint64_t a, uint64_t b) {
     uint128_t aa = a;
     uint128_t bb = b;
     return (aa << 64) + bb;
+}
+
+checksum256 evolutiondex::make256key(uint64_t a, uint64_t b, uint64_t c, uint64_t d) {
+    if (make128key(a,b) < make128key(c,d))
+      return checksum256::make_from_word_sequence<uint64_t>(a,b,c,d);
+    else
+      return checksum256::make_from_word_sequence<uint64_t>(c,d,a,b);
 }
 
 void evolutiondex::add_signed_ext_balance( const name& user, const extended_asset& to_add )
