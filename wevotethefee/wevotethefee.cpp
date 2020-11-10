@@ -116,5 +116,5 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
 
 int wevotethefee::get_index(int fee_value){
     auto it = lower_bound(FEE_VECTOR.begin(), FEE_VECTOR.end(), fee_value);
-    return clamp(it - FEE_VECTOR.begin(), MIN_FEE_INDEX, MAX_FEE_INDEX);
+    return it - FEE_VECTOR.begin();
 }
