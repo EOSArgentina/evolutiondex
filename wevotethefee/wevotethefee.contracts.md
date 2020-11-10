@@ -32,9 +32,7 @@ title: Vote fee
 summary: 'Vote fee value for a specific pair token'
 ---
 
-{{user}} votes a fee value for {{pair_token}} of evolutiondex.
-The exact value voted will be equal to the least of the numbers
-1,2,3,5,7,10,15,20,30,50,75,100,150,200,300 that is greater than or equal to {{fee_voted}}. One unit of fee value is equal to 0.01%.
+{{user}} votes a fee value for {{pair_token}} of evolutiondex. The exact value voted will be equal to the least of the numbers 10,15,20,30,50,75,100 that is greater than or equal to {{fee_voted}}. Values less than 10 or greater than 100 will be rejected. One unit of fee value is equal to 0.01%.
 
 The authorization of {{user}} is required, who will pay for the RAM required.
 
@@ -60,9 +58,7 @@ title: Update fee
 summary: 'Updates the fee value of a specific pair token'
 ---
 
-This actions executes the action changefee from evolutiondex with inputs {{pair_token}} and a fee value that is computed as the weighted median of the current votes in the corresponding fee table. 
-The weights of the votes are the balances of the pair token of each voter. 
-
+This action executes the action changefee from evolutiondex with inputs {{pair_token}} and a fee value that is computed as the weighted median of the current votes in the corresponding fee table.  The weights of the votes are the balances of the pair token of each voter. In the current version, it is always unnecessary to run this action, since it is automatically called by other actions.
 
 <h1 class="contract">onaddliquidity</h1>
 
