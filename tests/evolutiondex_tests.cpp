@@ -29,11 +29,13 @@ public:
         produce_blocks( 2 );
 
         create_accounts( { N(alice), N(bob), N(carol), N(eosio.token), N(evolutiondex),
-          N(wevotethefee), N(badtoken) } );
+          N(wevotethefee), N(badtoken), N(anothertoken) } );
         produce_blocks( 2 );
 
         set_code( N(eosio.token), contracts::token_wasm() );
         set_abi( N(eosio.token), contracts::token_abi().data() );
+        set_code( N(anothertoken), contracts::token_wasm() );
+        set_abi( N(anothertoken), contracts::token_abi().data() );
 
         set_code( N(evolutiondex), contracts::evolutiondex_wasm() );
         set_abi( N(evolutiondex), contracts::evolutiondex_abi().data() );
@@ -71,14 +73,14 @@ public:
 
         return base_tester::push_action( std::move(act), signer.to_uint64_t() );
     }
-    action_result create( account_name issuer, asset maximum_supply ) {
-        return push_action( N(eosio.token), N(eosio.token), N(create), mvo()
+    action_result create( name contract, account_name issuer, asset maximum_supply ) {
+        return push_action( contract, contract, N(create), mvo()
             ( "issuer", issuer)
             ( "maximum_supply", maximum_supply)
         );
     }
-    action_result issue( account_name issuer, account_name to, asset quantity, string memo ) {
-        return push_action( N(eosio.token), issuer, N(issue), mvo()
+    action_result issue( name contract, account_name issuer, account_name to, asset quantity, string memo ) {
+        return push_action( contract, issuer, N(issue), mvo()
             ( "to", to)
             ( "quantity", quantity)
             ( "memo", memo)
@@ -127,14 +129,22 @@ public:
     }
     action_result inittoken( name user, symbol new_symbol, extended_asset initial_pool1,
       extended_asset initial_pool2, int initial_fee, name fee_contract){
-        return push_action( N(evolutiondex), user, N(inittoken), mvo()
+        std::vector<name> auths{user, N(evolutiondex)};
+        try {
+        eosio::testing::base_tester::push_action( N(evolutiondex), N(inittoken), auths, mvo()
           ( "user", user)
           ("new_symbol", new_symbol)
           ("initial_pool1", initial_pool1)
           ("initial_pool2", initial_pool2) 
           ("initial_fee", initial_fee)
           ("fee_contract", fee_contract)
-        );
+        , 100, 0);
+      } catch (const fc::exception& ex) {
+         edump((ex));
+         edump((ex.to_detail_string()));
+         return error(ex.top_message());
+      }
+      return success();
     }
     action_result addliquidity(name user, asset to_buy, asset max_asset1, asset max_asset2) {
         return push_action( N(evolutiondex), user, N(addliquidity), mvo()
@@ -235,7 +245,7 @@ public:
     }
     vector <int64_t> total(){
         auto EVO_value = symbol::from_string("4,EVO").to_symbol_code().value;
-        auto ETUSD_value = symbol::from_string("4,ETUSD").to_symbol_code().value;
+        auto ETUSD_value = symbol::from_string("3,ETUSD").to_symbol_code().value;
         int64_t total_eos =  balance(N(alice), 0) + balance(N(bob), 0) 
           + system_balance(EVO_value).at(0) + system_balance(ETUSD_value).at(0);
         int64_t total_voice = balance(N(alice), 1) + balance(N(bob), 1) 
@@ -246,74 +256,73 @@ public:
         return ans;
     }
     void create_tokens_and_issue() {
-        create( N(alice), asset::from_string("461168601842738.7903 EOS") );
-        create( N(bob), asset::from_string("461168601842738.7903 VOICE") );
-        create( N(alice), asset::from_string("461168601842738.7903 TUSD") );
-        issue( N(alice), N(alice), asset::from_string("461168601842738.7903 EOS"), "");
-        issue( N(bob), N(bob), asset::from_string("461168601842738.7903 VOICE"), "");
-        issue( N(alice), N(alice), asset::from_string("461168601842738.7903 TUSD"), "");
+        create( N(eosio.token), N(alice), asset::from_string("461168601842738.7903 EOS") );
+        create( N(anothertoken), N(bob), asset::from_string("461168601842738.7903 VOICE") );
+        create( N(eosio.token), N(alice), asset::from_string("46116860184273879.03 TUSD") );
+        issue( N(eosio.token), N(alice), N(alice), asset::from_string("461168601842738.7903 EOS"), "");
+        issue( N(anothertoken), N(bob), N(bob), asset::from_string("461168601842738.7903 VOICE"), "");
+        issue( N(eosio.token), N(alice), N(alice), asset::from_string("46116860184273879.03 TUSD"), "");
     }
     void many_openext() {
         openext( N(alice), N(alice), extended_symbol{symbol::from_string("4,EOS"), N(eosio.token)});
-        openext( N(alice), N(alice), extended_symbol{symbol::from_string("4,VOICE"), N(eosio.token)});
-        openext( N(alice), N(alice), extended_symbol{symbol::from_string("4,TUSD"), N(eosio.token)});
+        openext( N(alice), N(alice), extended_symbol{symbol::from_string("4,VOICE"), N(anothertoken)});
+        openext( N(alice), N(alice), extended_symbol{symbol::from_string("2,TUSD"), N(eosio.token)});
         openext( N(bob), N(alice), extended_symbol{symbol::from_string("4,EOS"), N(eosio.token)});
-        openext( N(bob), N(alice), extended_symbol{symbol::from_string("4,VOICE"), N(eosio.token)});
-        openext( N(bob), N(alice), extended_symbol{symbol::from_string("4,TUSD"), N(eosio.token)});
+        openext( N(bob), N(alice), extended_symbol{symbol::from_string("4,VOICE"), N(anothertoken)});
+        openext( N(bob), N(alice), extended_symbol{symbol::from_string("2,TUSD"), N(eosio.token)});
     }
     void many_transfer() {
         transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("461000000000000.0000 EOS"), "");
-        transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("461168601842738.7000 VOICE"), "deposit to: alice");
-        transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("0.0903 VOICE"), "this goes to Bob");
-        transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("450000000000000.0000 TUSD"), "");
-        transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("3000000000000.0000 TUSD"), "deposit to: bob");
+        transfer( N(anothertoken), N(bob), N(evolutiondex), asset::from_string("461168601842738.7000 VOICE"), "deposit to: alice");
+        transfer( N(anothertoken), N(bob), N(evolutiondex), asset::from_string("0.0903 VOICE"), "this goes to Bob");
+        transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("45000000000000000.00 TUSD"), "");
+        transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("300000000000000.00 TUSD"), "deposit to: bob");
     }
-
     void prepare_carol_token() {
-        push_action( N(carol), N(carol), N(create), 
-          mvo() ("issuer", N(carol))("maximum_supply", asset::from_string("4.0000 EOS") ));
-        push_action( N(carol), N(carol), N(issue), 
-          mvo()("to", N(carol))( "quantity", asset::from_string("4.0000 EOS"))("memo", ""));
-        push_action( N(carol), N(carol), N(create), 
-          mvo() ("issuer", N(carol))("maximum_supply", asset::from_string("1.0000 VOICE") ));
-        push_action( N(carol), N(carol), N(issue), 
-          mvo()("to", N(carol))( "quantity", asset::from_string("1.0000 VOICE"))("memo", ""));
+        create( N(carol), N(carol), asset::from_string("4.0000 EOS") );
+        issue( N(carol), N(carol), N(carol), asset::from_string("4.0000 EOS"), "");
+        create( N(carol), N(carol), asset::from_string("1.0000 VOICE") );
+        issue( N(carol), N(carol), N(carol), asset::from_string("1.0000 VOICE"), "");
     }
     abi_serializer abi_ser;
 };
 
 static symbol EVO4 = symbol::from_string("4,EVO");
-static symbol ETUSD4 = symbol::from_string("4,ETUSD");
+static symbol ETUSD3 = symbol::from_string("3,ETUSD");
 static symbol EOS4 = symbol::from_string("4,EOS");
 static symbol VOICE4 = symbol::from_string("4,VOICE");
-static symbol TUSD4 = symbol::from_string("4,TUSD");
+static symbol TUSD2 = symbol::from_string("2,TUSD");
 
 static symbol_code EVO = EVO4.to_symbol_code();
-static symbol_code ETUSD = ETUSD4.to_symbol_code();
+static symbol_code ETUSD = ETUSD3.to_symbol_code();
 static symbol_code EOS = EOS4.to_symbol_code();
 static symbol_code VOICE = VOICE4.to_symbol_code();
-static symbol_code TUSD = TUSD4.to_symbol_code();
+static symbol_code TUSD = TUSD2.to_symbol_code();
 
 extended_asset extend(asset to_extend) {
-  return extended_asset{to_extend, N(eosio.token)};
+  if (to_extend.symbol_name() == "VOICE") {
+    return extended_asset{to_extend, N(anothertoken)};  
+  } else {
+    return extended_asset{to_extend, N(eosio.token)};
+  }
 }
 
 BOOST_AUTO_TEST_SUITE(evolutiondex_tests)
 
-BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
+BOOST_FIXTURE_TEST_CASE( add_rem_liquidity, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
 
     create_tokens_and_issue();
-    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    transfer( N(anothertoken), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
     many_openext();
 
     transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
-    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
+    transfer( N(anothertoken), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
     
     inittoken( N(alice), EVO4,
       extend(asset::from_string("1000000.0000 EOS")), 
@@ -397,16 +406,26 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
       remliquidity( N(alice), asset::from_string("46116860184273.8791 EVO"), 
       asset::from_string("1.0000 EOS"), asset::from_string("1.0000 VOICE")));
 
-    BOOST_REQUIRE_EQUAL( success(), 
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("the pool cannot be left empty"), 
       remliquidity( N(alice), asset::from_string("10000050.0000 EVO"),
       asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE") )
     );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("pair token does not exist"), 
+/*    BOOST_REQUIRE_EQUAL( wasm_assert_msg("pair token does not exist"), 
       addliquidity( N(alice), asset::from_string("2.0000 EVO"), 
       asset::from_string("0.0000 EOS"), asset::from_string("20.0000 VOICE"))
-    );
+    );*/
+} FC_LOG_AND_RETHROW()
 
-// set pools
+BOOST_FIXTURE_TEST_CASE( exchange_action, evolutiondex_tester ) try {
+    const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
+    abi_def abi_evo;
+    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
+    create_tokens_and_issue();
+    transfer( N(anothertoken), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    many_openext();
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
+    transfer( N(anothertoken), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
     inittoken( N(alice), EVO4,
       extend(asset::from_string("1000000.0000 EOS")),
       extend(asset::from_string("100000000.0000 VOICE")), 10, N(wevotethefee));
@@ -460,24 +479,33 @@ BOOST_FIXTURE_TEST_CASE( add_rem_exchange, evolutiondex_tester ) try {
     exchange( N(alice), EVO, extend(asset::from_string("0.1000 EOS")), asset::from_string("4.8500 VOICE"));
     exchange( N(alice), EVO, extend(asset::from_string("0.0001 EOS")), asset::from_string("0.0009 VOICE"));
 
-    vector <int64_t> expected_system_balance = {10000073864, 999999190299, 100000328128};
+    vector <int64_t> expected_system_balance = {10000073819, 999999185799, 100000328128};
     BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
-    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999926136);
-    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 1000000809701);
-
+    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999926181);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 1000000814201);
+ 
     BOOST_REQUIRE_EQUAL( success(), changefee(EVO, 50) );
 
     addliquidity( N(alice), asset::from_string("50.0000 EVO"),
       asset::from_string("10000000.0000 EOS"), asset::from_string("10000000.0000 VOICE") );
 
-    expected_system_balance = {10000124116, 1000004215279, 100000828128};
+    expected_system_balance = {10000123826, 1000004186279, 100000828128};
     BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
-    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999875884);
-    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 999995784721);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999876174);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 999995813721);
+ 
+    BOOST_REQUIRE_EQUAL( success(),
+      exchange( N(alice), EVO, extend(asset::from_string("-4.0000 EOS")), 
+                              asset::from_string("-401.9984 VOICE")) );
+    expected_system_balance = {10000083826, 1000008206263, 100000828128};
+    BOOST_REQUIRE_EQUAL(expected_system_balance == system_balance(EVO.value), true);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),0), 89999916174);
+    BOOST_REQUIRE_EQUAL(balance(N(alice),1), 999991793737);
+
 } FC_LOG_AND_RETHROW()
 
 
-BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
+BOOST_FIXTURE_TEST_CASE( increasing_poolvalue, evolutiondex_tester) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
@@ -493,9 +521,9 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
       extend(asset::from_string("23058430092.1369 EOS")),
       extend(asset::from_string("96116860184.2738 VOICE")), 10, N(wevotethefee));
 
-    inittoken( N(alice), ETUSD4, 
+    inittoken( N(alice), ETUSD3, 
       extend(asset::from_string("10000000000.0000 EOS")),
-      extend(asset::from_string("99116860184.2738 TUSD")), 10, N(wevotethefee));
+      extend(asset::from_string("9911686018427.38 TUSD")), 10, N(wevotethefee));
 
     auto old_total = total();
     auto old_vec = system_balance(EVO.value);
@@ -538,7 +566,7 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     old_vec = system_balance(ETUSD.value);
     BOOST_REQUIRE_EQUAL(success(), 
       exchange( N(bob), ETUSD, 
-      extend(asset::from_string("30000000000.0000 TUSD")),
+      extend(asset::from_string("3000000000000.00 TUSD")),
       asset::from_string("40000000.0000 EOS") ) );
     BOOST_REQUIRE_EQUAL(old_total == total(), true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(ETUSD.value)), true);
@@ -572,9 +600,6 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
     
     old_total = total(); 
     old_vec = system_balance(EVO.value);
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
-      exchange( N(alice), EVO, extend(asset::from_string("-1.0000 EOS")), 
-      asset::from_string("-0.1068 VOICE")) );
     BOOST_REQUIRE_EQUAL( success(), exchange( N(alice), EVO, 
       extend(asset::from_string("-1.0000 EOS")), asset::from_string("-0.1069 VOICE")) );
     BOOST_REQUIRE_EQUAL(old_total == total(), true);
@@ -582,94 +607,12 @@ BOOST_FIXTURE_TEST_CASE( increasing_parameter, evolutiondex_tester) try {
 
     old_total = total(); 
     old_vec = system_balance(EVO.value);
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
-      exchange( N(bob), EVO, extend(asset::from_string("-13.0001 VOICE")), 
-      asset::from_string("-122.0328 EOS")) );
     BOOST_REQUIRE_EQUAL( success(), exchange( N(bob), EVO, 
-      extend(asset::from_string("-13.0001 VOICE")), asset::from_string("-122.0329 EOS")) );
+      extend(asset::from_string("-12.0001 VOICE")), asset::from_string("-122.0329 EOS")) );
     BOOST_REQUIRE_EQUAL(old_total == total(), true);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
 } FC_LOG_AND_RETHROW()
 
-
-BOOST_FIXTURE_TEST_CASE( increasing_parameter_zero_fee, evolutiondex_tester ) try {
-    const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
-    abi_def abi_evo;
-    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
-
-    create_tokens_and_issue();
-
-    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
-
-    many_openext();
-    many_transfer();
-    transfer( N(eosio.token), N(alice), N(evolutiondex), 
-      asset::from_string("168601842738.7903 EOS"), "");
-
-    inittoken( N(alice), EVO4,
-      extend(asset::from_string("23058430092.1369 EOS")),
-      extend(asset::from_string("96116860184.2738 VOICE")), 0, N(wevotethefee));
-
-    inittoken( N(alice), ETUSD4,
-      extend(asset::from_string("10000000000.0000 EOS")),
-      extend(asset::from_string("99116860184.2738 TUSD")), 0, N(wevotethefee));
-
-    auto old_total = total();
-    auto old_vec = system_balance(EVO.value);
-    exchange( N(alice), EVO, extend(asset::from_string("4.0000 EOS")), 
-      asset::from_string("1.0000 VOICE") );
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
-    
-    old_total = total();
-    old_vec = system_balance(EVO.value);
-    addliquidity( N(alice), asset::from_string("0.0001 EVO"), 
-      asset::from_string("10000000.0000 EOS"), asset::from_string("10000000.0000 VOICE") );
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
-    
-    produce_blocks();
-
-    old_total = total();
-    old_vec = system_balance(EVO.value);
-    remliquidity( N(alice), asset::from_string("0.0001 EVO"), 
-      asset::from_string("0.0000 EOS"), asset::from_string("0.0000 VOICE") );
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
-
-    old_total = total();
-    old_vec = system_balance(ETUSD.value);
-    exchange( N(bob), ETUSD, extend(asset::from_string("30000000000.0000 TUSD")),
-      asset::from_string("40000000.0000 EOS") );
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(ETUSD.value)), true);
-
-    old_total = total();    
-    old_vec = system_balance(EVO.value);
-    exchange( N(bob), EVO, extend(asset::from_string("4000.0000 EOS")), 
-      asset::from_string("1.0000 VOICE") );
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
-
-    old_total = total();    
-    withdraw( N(bob), N(bob), extend(asset::from_string("0.0001 EOS")) );
-    BOOST_REQUIRE_EQUAL(old_total == total(), false);
-
-    old_total = total();
-    old_vec = system_balance(EVO.value);
-    addliquidity( N(alice), asset::from_string("150000000000000.0000 EVO"), 
-      asset::from_string("400000000000000.0000 EOS"), 
-      asset::from_string("400000000000000.0000 VOICE") );
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
-
-    old_total = total(); 
-    old_vec = system_balance(EVO.value);
-    exchange( N(alice), EVO, extend(asset::from_string("387592687324317.3478 EOS")), 
-      asset::from_string("0.0001 VOICE"));
-    BOOST_REQUIRE_EQUAL(old_total == total(), true);
-    BOOST_REQUIRE_EQUAL(is_increasing(old_vec, system_balance(EVO.value)), true);
-} FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
@@ -678,7 +621,7 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
 
     create_tokens_and_issue();
     prepare_carol_token();
-    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("0.0001 VOICE"), "");
+    transfer( N(anothertoken), N(bob), N(alice), asset::from_string("0.0001 VOICE"), "");
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
 
@@ -688,7 +631,7 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( success(),
       inittoken( N(alice), EVO4,
         extend(asset::from_string("23058430092.1369 EOS")),
-        extend(asset::from_string("96116860184.2738 VOICE")), 12, N(wevotethefee)) );
+        extend(asset::from_string("96116860184.2738 VOICE")), 10, N(wevotethefee)) );
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol mismatch"), 
       transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("4.0000 EOS"), 
@@ -696,40 +639,40 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
       transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("4.0000 EOS"), 
-      "exchange: EVO, 16.6536 VOICE") );
+      "exchange: EVO, 16.6570 VOICE") );
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol mismatch"), 
       transfer( N(carol), N(carol), N(evolutiondex), asset::from_string("4.0000 EOS"), 
-      "exchange: EVO, 16.6535 VOICE") );
+      "exchange: EVO, 16.6569 VOICE") );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol mismatch"), 
       transfer( N(carol), N(carol), N(evolutiondex), asset::from_string("1.0000 VOICE"), 
       "exchange: EVO, 0.0001 EOS") );
 
     int64_t pre_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
-    int64_t pre_voice_balance = token_balance(N(eosio.token), N(alice), VOICE.value);
+    int64_t pre_voice_balance = token_balance(N(anothertoken), N(alice), VOICE.value);
     BOOST_REQUIRE_EQUAL( success(), 
       transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("4.0000 EOS"), 
-      "exchange: EVO, 16.6535 VOICE") );
+      "exchange: EVO, 16.6569 VOICE") );
     BOOST_REQUIRE_EQUAL( pre_eos_balance - 40000, token_balance(N(eosio.token), N(alice), EOS.value) );
-    BOOST_REQUIRE_EQUAL( pre_voice_balance + 166535, token_balance(N(eosio.token), N(alice), VOICE.value) );
+    BOOST_REQUIRE_EQUAL( pre_voice_balance + 166569, token_balance(N(anothertoken), N(alice), VOICE.value) );
 
-    inittoken( N(alice), ETUSD4,
+    inittoken( N(alice), ETUSD3,
       extend(asset::from_string("10000000000.0000 EOS")),
-      extend(asset::from_string("99116860184.2738 TUSD")), 0, N(wevotethefee));
+      extend(asset::from_string("9911686018427.38 TUSD")), 10, N(wevotethefee));
 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("available is less than expected"), 
       transfer( N(eosio.token), N(alice), N(evolutiondex),
-        asset::from_string("4000.0000 TUSD"), "exchange: ETUSD, 403.5641 EOS") );
+        asset::from_string("400000.00 TUSD"), "exchange: ETUSD, 403.1605 EOS") );
 
     pre_eos_balance = token_balance(N(eosio.token), N(alice), EOS.value);
     int64_t pre_tusd_balance = token_balance(N(eosio.token), N(alice), TUSD.value);
     BOOST_REQUIRE_EQUAL( success(), 
-      transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("4000.0000 TUSD"), 
-      "exchange: ETUSD, 403.5639 EOS") );
+      transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("400000.00 TUSD"), 
+      "exchange: ETUSD, 403.1604 EOS") );
 
     BOOST_REQUIRE_EQUAL( pre_tusd_balance - 40000000, 
       token_balance(N(eosio.token), N(alice), TUSD.value) );
-    BOOST_REQUIRE_EQUAL( pre_eos_balance + 4035640, 
+    BOOST_REQUIRE_EQUAL( pre_eos_balance + 4031604, 
       token_balance(N(eosio.token), N(alice), EOS.value) );
 
     auto old_vec = system_balance(EVO.value);
@@ -740,7 +683,7 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
 
     old_vec = system_balance(ETUSD.value);
     transfer( N(eosio.token), N(bob), N(evolutiondex), 
-      asset::from_string("300000000000000.0000 TUSD"), "exchange: ETUSD, 40000000000000 EOS,");
+      asset::from_string("30000000000000000.00 TUSD"), "exchange: ETUSD, 40000000000000 EOS,");
     new_vec = system_balance(ETUSD.value);
     BOOST_REQUIRE_EQUAL(is_increasing(old_vec, new_vec), true);
 } FC_LOG_AND_RETHROW()
@@ -749,7 +692,7 @@ BOOST_FIXTURE_TEST_CASE( memoexchange_test, evolutiondex_tester ) try {
 BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
 
     create_tokens_and_issue();
-    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    transfer( N(anothertoken), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
@@ -765,18 +708,18 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL( error("missing authority of natalia"), 
       push_action( N(evolutiondex), N(bob), N(openext), mvo()
         ( "user", N(bob))( "payer", N(natalia) )
-        ( "ext_symbol", extended_symbol{VOICE4, N(eosio.token)} ))
+        ( "ext_symbol", extended_symbol{VOICE4, N(anothertoken)} ))
     );
     BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
       extended_symbol{EOS4, N(eosio.token)}) );
     BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
-      extended_symbol{VOICE4, N(eosio.token)}) );
+      extended_symbol{VOICE4, N(anothertoken)}) );
     BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
-      extended_symbol{VOICE4, N(eosio.token)}) );
+      extended_symbol{VOICE4, N(anothertoken)}) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg( "user account does not exist"), 
-      openext( N(cat), N(alice), extended_symbol{VOICE4, N(eosio.token)}) );
+      openext( N(cat), N(alice), extended_symbol{VOICE4, N(anothertoken)}) );
     BOOST_REQUIRE_EQUAL( success(), openext( N(alice), N(alice), 
-      extended_symbol{VOICE4, N(eosio.token)}) );
+      extended_symbol{VOICE4, N(anothertoken)}) );
 
     // ONTRANSFER
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("This transfer is not for evolutiondex"), 
@@ -787,7 +730,7 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
       asset::from_string("1000.0000 EOS"), "deposit to: evolutiondex") );
     BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex), 
       asset::from_string("1000.0000 EOS"), "") );
-    BOOST_REQUIRE_EQUAL( success(), transfer( N(eosio.token), N(alice), N(evolutiondex),
+    BOOST_REQUIRE_EQUAL( success(), transfer( N(anothertoken), N(alice), N(evolutiondex),
       asset::from_string("20000.0000 VOICE"), "") );
 
     // WITHDRAW
@@ -805,6 +748,13 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
       extend(asset::from_string("0.0003 EOS")) ));
 
     // INITTOKEN
+    BOOST_REQUIRE_EQUAL( error("missing authority of evolutiondex"), 
+      push_action( N(evolutiondex), N(alice), N(inittoken), mvo()
+        ("user", N(alice)) ("new_symbol", EVO4)
+        ("initial_pool1", extend(asset::from_string("1.0000 EOS")))
+        ("initial_pool2", extend(asset::from_string("1.0000 ECO")))
+        ("initial_fee", 1) ("fee_contract", N(carol)) )
+    );
     BOOST_REQUIRE_EQUAL( error("missing authority of alice"), 
       push_action( N(evolutiondex), N(bob), N(inittoken), mvo()
         ("user", N(alice)) ("new_symbol", EVO4)
@@ -828,41 +778,32 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 EOS")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), 
-      inittoken( N(alice), ETUSD4, 
+      inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0003 EOS")), 
       extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("insufficient funds"), 
-      inittoken( N(alice), ETUSD4, 
+    BOOST_REQUIRE_EQUAL(  wasm_assert_msg("insufficient funds"),
+      inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0002 EOS")), 
       extend(asset::from_string("100000000.0000 VOICE")), 10, N(wevotethefee)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("new_symbol precision must be (precision1 + precision2) / 2"),
+      inittoken( N(alice), EVO4, 
+      extend(asset::from_string("0.0001 EOS")),
+      extend(asset::from_string("0.100 VOICE")), 10, N(wevotethefee)) );
     BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
+    produce_blocks();
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("token symbol already exists"), inittoken( N(alice), EVO4, 
       extend(asset::from_string("0.0001 EOS")),
       extend(asset::from_string("0.1000 VOICE")), 10, N(wevotethefee)) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), ETUSD4, 
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial_fee must be 10"), inittoken( N(alice), ETUSD3, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), 501, N(wevotethefee)) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("initial fee out of reasonable range"), inittoken( N(alice), ETUSD4, 
+      extend(asset::from_string("0.10 TUSD")), 501, N(wevotethefee)) );
+    BOOST_REQUIRE_EQUAL( wasm_assert_msg("fee_contract must be wevotethefee"), 
+      inittoken( N(alice), ETUSD3, 
       extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), -1, N(wevotethefee)) );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("fee_contract account must exist or be empty"), inittoken( N(alice), ETUSD4, 
-      extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.1000 VOICE")), 1, N(nonexistent)) );
-    BOOST_REQUIRE_EQUAL( success(), inittoken( N(alice), ETUSD4, 
-      extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.0001 VOICE")), 1, N( )) );
-    
-    // behaviour when fee_contract is empty 
-    BOOST_REQUIRE_EQUAL( success(), 
-      transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("0.0001 ETUSD"), "") );
-    BOOST_REQUIRE_EQUAL( success(), 
-      transfer( N(evolutiondex), N(bob), N(alice), asset::from_string("0.0001 ETUSD"), "") );
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("this pair token has fixed fee parameter"),
-      changefee(ETUSD, 20) );
-    BOOST_REQUIRE_EQUAL( success(), remliquidity( N(alice), asset::from_string("0.0001 ETUSD"),
-      asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
+      extend(asset::from_string("0.10 ETUSD")), 10, N(alice)) );
+// The assert "the pool is already indexed" is tested in "indextable" test case.
 
   // TRANSFER
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("extended_symbol not registered for this user,\
@@ -877,7 +818,7 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
         ("to", N(alice))("memo", "") )
     );
     BOOST_REQUIRE_EQUAL( success(), 
-      closeext( N(alice), N(alice), extended_symbol{VOICE4, N(eosio.token)}) );
+      closeext( N(alice), N(alice), extended_symbol{VOICE4, N(anothertoken)}) );
     BOOST_REQUIRE_EQUAL( success(), 
       closeext( N(alice), N(bob), extended_symbol{EOS4, N(eosio.token)} ) );
     BOOST_REQUIRE_EQUAL( 9999999, token_balance( N(eosio.token), N(bob), EOS.value ));
@@ -890,34 +831,35 @@ BOOST_FIXTURE_TEST_CASE( the_other_actions, evolutiondex_tester ) try {
         mvo() ("pair_token", EVO) ("newfee", 50) )
     );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("pair token does not exist"), changefee(EOS, 500));
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("new fee out of reasonable range"), changefee(EVO, 501));
-    BOOST_REQUIRE_EQUAL( wasm_assert_msg("new fee out of reasonable range"), changefee(EVO, -5));
     BOOST_REQUIRE_EQUAL( success(), changefee(EVO, 50) );
 
   // Notifications to fee_contract 
+
+    set_code( N(wevotethefee), contracts::badtoken_wasm() );
+    set_abi( N(wevotethefee), contracts::badtoken_abi().data() );
     many_openext();
-    transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("0.0002 EOS"), "");
-    transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("0.0002 VOICE"), "");
-    BOOST_REQUIRE_EQUAL( success(), inittoken( N(bob), ETUSD4, 
-      extend(asset::from_string("0.0001 EOS")),
-      extend(asset::from_string("0.0001 VOICE")), 0, N(badtoken) ) ); 
+    transfer( N(eosio.token), N(bob), N(evolutiondex), asset::from_string("0.0004 EOS"), "");
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("0.04 TUSD"), "deposit to: bob");
+
+    BOOST_REQUIRE_EQUAL( success(), inittoken( N(bob), ETUSD3, 
+      extend(asset::from_string("0.0002 EOS")),
+      extend(asset::from_string("0.02 TUSD")), 10, N(wevotethefee) ) ); 
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("notification received"), 
-      transfer( N(evolutiondex), N(bob), N(alice), asset::from_string("0.0001 ETUSD"), "") );
+      transfer( N(evolutiondex), N(bob), N(alice), asset::from_string("0.001 ETUSD"), "") );
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("notification received"), 
-      addliquidity( N(bob), asset::from_string("0.0001 ETUSD"), 
-      asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
+      addliquidity( N(bob), asset::from_string("0.001 ETUSD"), 
+      asset::from_string("0.0002 EOS"), asset::from_string("0.02 TUSD")));
     BOOST_REQUIRE_EQUAL( wasm_assert_msg("notification received"), 
-      remliquidity( N(bob), asset::from_string("0.0001 ETUSD"), 
-      asset::from_string("0.0001 EOS"), asset::from_string("0.0001 VOICE")));
+      remliquidity( N(bob), asset::from_string("0.001 ETUSD"), 
+      asset::from_string("0.0001 EOS"), asset::from_string("0.01 TUSD")));
 
 } FC_LOG_AND_RETHROW()
-
 
 
 BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
 
     create_tokens_and_issue();
-    transfer( N(eosio.token), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    transfer( N(anothertoken), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
 
     const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
     abi_def abi_evo;
@@ -927,7 +869,7 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     many_openext();
 
     transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
-    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
+    transfer( N(anothertoken), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
     
     inittoken( N(alice), EVO4,
       extend(asset::from_string("1000000.0000 EOS")), 
@@ -941,7 +883,7 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
     auto ISNT = symbol::from_string("4,ISNT").to_symbol_code();
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("pair_token balance does not exist"), 
-      votefee(N(alice), ISNT, 30) );
+      votefee(N(alice), ISNT, 10) );
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("pair_token balance does not exist"), 
       votefee(N(bob), EVO, 30) );
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), votefee(N(alice), EVO, 30));
@@ -952,26 +894,35 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("fee table nonexistent, run openfeetable"), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(success(), openfeetable(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("already opened"), openfeetable(N(alice), EVO));
-    BOOST_REQUIRE_EQUAL(wasm_assert_msg("there are no votes"), updatefee(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("user is not voting"), closevote(N(alice), EVO));
-    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 1 and 300 allowed"), votefee(N(alice), EVO, 301));
-    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 1 and 300 allowed"), votefee(N(alice), EVO, -10));
-    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 1 and 300 allowed"), votefee(N(alice), EVO, 0));
-
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 10 and 100 are allowed"), votefee(N(alice), EVO, 101));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 10 and 100 are allowed"), votefee(N(alice), EVO, -10));
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("only values between 10 and 100 are allowed"), votefee(N(alice), EVO, 9));
     BOOST_REQUIRE_EQUAL(success(), votefee(N(alice), EVO, 30));
     BOOST_REQUIRE_EQUAL(success(), updatefee(N(alice), EVO));
     BOOST_REQUIRE_EQUAL(wasm_assert_msg("table of votes is not empty"), closefeetable(EVO));
+
+    auto evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+      "feetable" )["votes"].get_array();
+    BOOST_REQUIRE_EQUAL(100000000000, evo_votes[8]);
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     auto evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
     BOOST_REQUIRE_EQUAL(30, evo_stats["fee"]);
 
+// Leave vote table with zero votes, fee value remains unchanged
+    transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("10000000.0000 EVO"), "");
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(30, evo_stats["fee"]);
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
-    auto evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+    evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
-    BOOST_REQUIRE_EQUAL(100000000000, evo_votes[8]);
+    BOOST_REQUIRE_EQUAL(0, evo_votes[5]);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    transfer( N(evolutiondex), N(bob), N(alice), asset::from_string("10000000.0000 EVO"), "");
 
-    // Test authorizations
+// Test authorizations
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
     BOOST_REQUIRE_EQUAL( error("missing authority of bob"),
       push_action( N(wevotethefee), N(alice), N(votefee), 
         mvo()( "user", N(bob) )( "pair_token", EVO )( "fee_voted", "10" ) )
@@ -981,19 +932,19 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
         mvo()( "user", N(bob) )( "pair_token", EVO ) )
     );
 
-    // Vote balance change after transfer
+// Vote balance change after transfer
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     BOOST_REQUIRE_EQUAL(success(), 
       transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("100.0000 EVO"), ""));
 
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
-    BOOST_REQUIRE_EQUAL(success(), votefee(N(bob), EVO, 300));
+    BOOST_REQUIRE_EQUAL(success(), votefee(N(bob), EVO, 100));
     evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
     BOOST_REQUIRE_EQUAL(99999000000, evo_votes[8]);
-    BOOST_REQUIRE_EQUAL(1000000, evo_votes[14]);
+    BOOST_REQUIRE_EQUAL(1000000, evo_votes[11]);
 
-    // Scenarios with many votes
+// Scenarios with many votes
     create_accounts( { N(dan), N(eva), N(fran)});
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);    
     BOOST_REQUIRE_EQUAL(success(), transfer( N(evolutiondex), N(alice), N(carol), asset::from_string("2000.0000 EVO"), ""));
@@ -1002,26 +953,41 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     transfer( N(evolutiondex), N(alice), N(fran), asset::from_string("2500000.0000 EVO"), "");
 
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
-    BOOST_REQUIRE_EQUAL(success(), votefee(N(carol), EVO, 1));
-    votefee(N(dan), EVO, 2);
-    votefee(N(eva), EVO, 99);
-    votefee(N(fran), EVO, 108);
+    BOOST_REQUIRE_EQUAL(success(), votefee(N(carol), EVO, 10));
+    votefee(N(dan), EVO, 10);
+    votefee(N(eva), EVO, 74);
+    votefee(N(fran), EVO, 73);
 
-    updatefee(N(alice), EVO);
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
-    BOOST_REQUIRE_EQUAL(100, evo_stats["fee"]);
+    BOOST_REQUIRE_EQUAL(75, evo_stats["fee"]);
 
+    // Test updatefee when closing votes, then restore votes.
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    closevote( N(alice), EVO );
+    closevote( N(eva), EVO );
+    closevote( N(fran), EVO );
+    evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
+      "feetable" )["votes"].get_array();
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(10, evo_stats["fee"]);
+    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
+    votefee(N(alice), EVO, 30); 
+    votefee(N(eva), EVO, 75);
+    votefee(N(fran), EVO, 75);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
+    BOOST_REQUIRE_EQUAL(75, evo_stats["fee"]);
+
+    // Test fee modification when adding and removing liquidity
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     openext( N(eva), N(eva), extended_symbol{symbol::from_string("4,EOS"), N(eosio.token)});
-    openext( N(eva), N(eva), extended_symbol{symbol::from_string("4,VOICE"), N(eosio.token)});
+    openext( N(eva), N(eva), extended_symbol{symbol::from_string("4,VOICE"), N(anothertoken)});
     push_action( N(evolutiondex), N(eva), N(remliquidity), mvo()
           ( "user", N(eva))( "to_sell", asset::from_string("4000000.0000 EVO"))
           ( "min_asset1", asset::from_string("1.0000 EOS") )
           ( "min_asset2", asset::from_string("1.0000 VOICE")) );
-
-    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
-    updatefee(N(alice), EVO);
-    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
     BOOST_REQUIRE_EQUAL(30, evo_stats["fee"]);
 
@@ -1029,34 +995,30 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
           ( "user", N(eva))( "to_buy", asset::from_string("3900000.0000 EVO"))
           ( "max_asset1", asset::from_string("100000000000.0000 EOS") )
           ( "max_asset2", asset::from_string("100000000000.0000 VOICE")) )   );
-    abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
-    updatefee(N(alice), EVO);
-    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
-    BOOST_REQUIRE_EQUAL(100, evo_stats["fee"]);
+    BOOST_REQUIRE_EQUAL(75, evo_stats["fee"]);
 
-    // median 1
+// median 10, due to clamp between 10 and 100
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
-    votefee(N(alice), EVO, 1);
-    votefee(N(dan), EVO, 1);
-    votefee(N(eva), EVO, 1);
-    votefee(N(fran), EVO, 1);
-    updatefee(N(alice), EVO);
+    votefee(N(alice), EVO, 10);
+    votefee(N(dan), EVO, 10);
+    votefee(N(eva), EVO, 10);
+    votefee(N(fran), EVO, 10);
     evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
-    BOOST_REQUIRE_EQUAL(98999000000, evo_votes[0]);
+    BOOST_REQUIRE_EQUAL(98999000000, evo_votes[5]);
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
-    BOOST_REQUIRE_EQUAL(1, evo_stats["fee"]);
+    BOOST_REQUIRE_EQUAL(10, evo_stats["fee"]);
 
-    // check votes after transfer, remliquidity and addliquidity
+// check votes after transfer, remliquidity and addliquidity
     BOOST_REQUIRE_EQUAL(success(), 
       transfer( N(evolutiondex), N(alice), N(bob), asset::from_string("100.0000 EVO"), ""));
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
       evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
-    BOOST_REQUIRE_EQUAL(98998000000, evo_votes[0]);
-    BOOST_REQUIRE_EQUAL(2000000, evo_votes[14]);
+    BOOST_REQUIRE_EQUAL(98998000000, evo_votes[5]);
+    BOOST_REQUIRE_EQUAL(2000000, evo_votes[11]);
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     push_action( N(evolutiondex), N(eva), N(remliquidity), mvo()
@@ -1066,7 +1028,7 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
     evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
-    BOOST_REQUIRE_EQUAL(98998000000 - 100000000, evo_votes[0]);
+    BOOST_REQUIRE_EQUAL(98998000000 - 100000000, evo_votes[5]);
 
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     push_action( N(evolutiondex), N(eva), N(addliquidity), mvo()
@@ -1076,20 +1038,72 @@ BOOST_FIXTURE_TEST_CASE( we_vote_the_fee, evolutiondex_tester ) try {
     abi_ser.set_abi(abi_wevote, abi_serializer_max_time);
     evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
-    BOOST_REQUIRE_EQUAL(98998000000 - 100000000 + 1000000, evo_votes[0]);
+    BOOST_REQUIRE_EQUAL(98998000000 - 100000000 + 1000000, evo_votes[5]);
 
-    // median 300
-    votefee(N(dan), EVO, 300);
-    votefee(N(eva), EVO, 300);
-    votefee(N(fran), EVO, 300);
-    updatefee(N(alice), EVO);
+// median 100
+    votefee(N(dan), EVO, 100);
+    votefee(N(eva), EVO, 100);
+    votefee(N(fran), EVO, 100);
     evo_votes = get_balance(N(wevotethefee), name(EVO.value), N(feetable), EVO.value,
       "feetable" )["votes"].get_array();
     abi_ser.set_abi(abi_evo, abi_serializer_max_time);
     evo_stats = get_balance(N(evolutiondex), name(EVO.value), N(stat), EVO.value, "currency_stats" );
-    BOOST_REQUIRE_EQUAL(300, evo_stats["fee"]);
+    BOOST_REQUIRE_EQUAL(100, evo_stats["fee"]);
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( indextable, evolutiondex_tester ) try {
 
-BOOST_AUTO_TEST_SUITE_END()
+    create_tokens_and_issue();
+    transfer( N(anothertoken), N(bob), N(alice), asset::from_string("500000000.0000 VOICE"), "");
+    const auto& accnt2 = control->db().get<account_object,by_name>( N(evolutiondex) );
+    abi_def abi_evo;
+    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt2.abi, abi_evo), true);
+    abi_ser.set_abi(abi_evo, abi_serializer_max_time);
+    many_openext();
+    transfer( N(eosio.token), N(alice), N(evolutiondex), asset::from_string("10000000.0000 EOS"), "");
+    transfer( N(anothertoken), N(alice), N(evolutiondex), asset::from_string("200000000.0000 VOICE"), "");
+       
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("token symbol does not exist"), 
+      push_action( N(evolutiondex), N(alice), N(indexpair), 
+            mvo() ( "user", N(alice) ) ( "evo_symbol", EVO4 ) ) );  
+
+    BOOST_REQUIRE_EQUAL(success(), inittoken( N(alice), EVO4,
+        extend(asset::from_string("1000000.0000 EOS")), 
+        extend(asset::from_string("100000000.0000 VOICE")), 10, N(wevotethefee)) );
+
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("the pool is already indexed"), 
+      push_action( N(evolutiondex), N(alice), N(indexpair), 
+            mvo() ( "user", N(alice) ) ( "evo_symbol", EVO4 ) ) );  
+
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("the pool is already indexed"), 
+        inittoken( N(alice), EOS4,
+        extend(asset::from_string("1.0000 EOS")), 
+        extend(asset::from_string("1.0000 VOICE")), 10, N(wevotethefee)) );
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("the pool is already indexed"),
+        inittoken( N(alice), EOS4,
+        extend(asset::from_string("1.0000 VOICE")), 
+        extend(asset::from_string("1.0000 EOS")), 10, N(wevotethefee)) );
+
+    auto table = get_balance(N(evolutiondex), N(evolutiondex), N(evoindex), EVO.value, "index_struct");
+    BOOST_REQUIRE_EQUAL(table["id_256"], "34e996aaf9a4153000004543494f56045530ea033482a60000000000534f4504");
+    BOOST_REQUIRE_EQUAL(table["evo_symbol"], "4,EVO");
+
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("extended_symbol not registered for this user,\
+ please run openext action or write exchange details in the memo of your transfer"),
+        inittoken( N(alice), EOS4,
+        extend(asset::from_string("1.00000 VOICE")), 
+        extend(asset::from_string("1.0000 EOS")), 10, N(wevotethefee)) );
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("extended_symbol not registered for this user,\
+ please run openext action or write exchange details in the memo of your transfer"),
+        inittoken( N(alice), EOS4,
+        extend(asset::from_string("1.0000 VOICE")), 
+        extend(asset::from_string("1.00000 EOS")), 10, N(wevotethefee)) );
+    BOOST_REQUIRE_EQUAL(wasm_assert_msg("extended_symbol not registered for this user,\
+ please run openext action or write exchange details in the memo of your transfer"),
+        inittoken( N(alice), EOS4, extend(asset::from_string("1.0000 VOICE")), 
+        extended_asset{asset::from_string("1.0000 EOS"), N(anothertoken)}, 
+        10, N(wevotethefee)) );
+} FC_LOG_AND_RETHROW()
+
+BOOST_AUTO_TEST_SUITE_END() 
