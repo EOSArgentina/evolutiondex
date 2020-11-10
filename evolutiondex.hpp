@@ -15,6 +15,8 @@ namespace evolution {
       public:
          const int64_t MAX = eosio::asset::max_amount;
          const int64_t INIT_MAX = 1000000000000000;  // 10^15 
+         const int ADD_LIQUIDITY_FEE = 1;
+         const int DEFAULT_FEE = 10;
 
          using contract::contract;
          [[eosio::action]] void inittoken(name user, symbol new_symbol, 

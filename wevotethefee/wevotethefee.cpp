@@ -11,6 +11,7 @@ int wevotethefee::median(symbol_code pair_token){
     if (sum == 0) return FEE_VECTOR.at(DEFAULT_FEE_INDEX);
     auto it = lower_bound(partial_sum_vec.begin(), partial_sum_vec.end(), sum / 2);
     auto index = it - partial_sum_vec.begin();
+    check( index < FEE_VECTOR.size(), "invalid index" ); // should always pass
     return FEE_VECTOR.at(index);
 }
 
@@ -109,6 +110,7 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
     auto table = tables.find( pair_token.raw());
     check( table != tables.end(), "fee table nonexistent, run openfeetable" );
     tables.modify(table, same_payer, [&]( auto& a ){
+      check( (0 <= fee_index) && (fee_index < a.votes.size()), "invalid fee_index"); // should always pass
       a.votes.at(fee_index) += amount;
     });
     if (need_update) updatefee( pair_token );
@@ -116,5 +118,6 @@ void wevotethefee::addvote(symbol_code pair_token, int fee_index, int64_t amount
 
 int wevotethefee::get_index(int fee_value){
     auto it = lower_bound(FEE_VECTOR.begin(), FEE_VECTOR.end(), fee_value);
+    check( it < FEE_VECTOR.end(), "invalid iterator" ); // should always pass
     return it - FEE_VECTOR.begin();
 }

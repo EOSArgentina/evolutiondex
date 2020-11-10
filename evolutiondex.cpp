@@ -106,7 +106,7 @@ void evolutiondex::add_signed_liq(name user, asset to_add, bool is_buying,
     auto P1 = token-> pool1.quantity.amount;
     auto P2 = token-> pool2.quantity.amount;
 
-    int fee = is_buying? 1 : 0;
+    int fee = is_buying? ADD_LIQUIDITY_FEE : 0;
     auto to_pay1 = extended_asset{ asset{compute(to_add.amount, P1, A, fee),
       token->pool1.quantity.symbol}, token->pool1.contract};
     auto to_pay2 = extended_asset{ asset{compute(to_add.amount, P2, A, fee),
@@ -212,7 +212,7 @@ extended_asset initial_pool2, int initial_fee, name fee_contract)
     stats statstable( get_self(), new_symbol.code().raw() );
     const auto& token = statstable.find( new_symbol.code().raw() );
     check ( token == statstable.end(), "token symbol already exists" );
-    check( initial_fee == 10, "initial_fee must be 10");
+    check( initial_fee == DEFAULT_FEE, "initial_fee must be 10");
     check( fee_contract == "wevotethefee"_n, "fee_contract must be wevotethefee");
 
     statstable.emplace( user, [&]( auto& a ) {
