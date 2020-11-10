@@ -31,7 +31,7 @@ Withdraw funds from your opened channels, to the account "TO":
 
 Create the EOS/PESO evotoken. Set the initial liquidity, the initial fee for the trading pair and the fee controller.
 
-    cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, {"contract":"pesocontract", "quantity":"1.0000 PESO"}, 10, "FEE_CONTROLLER"]' -p YOUR_ACCOUNT
+    cleos push action evolutiondex inittoken '["YOUR_ACCOUNT", "4,EOSPESO", {"contract":"eosio.token", "quantity":"1.0000 EOS"}, {"contract":"pesocontract", "quantity":"1.0000 PESO"}, 10, "wevotethefee"]' -p YOUR_ACCOUNT
 
 Check your evotokens balance:
 
@@ -51,7 +51,7 @@ Sell your evotokens and retire liquidity. The amount of evotoken is exact and th
 Exchange your tokens.
 There two methods. The first one is to do a transfer to the contract with a memo starting with "exchange:" and followed by the details of your operation, with the format "EVOTOKN, min_expected_asset, memo". Blank spaces before EVOTOKN, min_expected_asset and memo are ignored. The amount to be obtained by the user will be computed by the contract and executed only if it is at least min_expected_asset. 
 
-    cleos push action eosio.token '["YOUR_ACCOUNT", "evolutiondex", "1.0000 EOS", "exchange: EOSPESO, 0.1000 PESO, memo for the transfer]' -p YOUR_ACCOUNT
+    cleos push action eosio.token transfer '["YOUR_ACCOUNT", "evolutiondex", "1.0000 EOS", "exchange: EOSPESO, 0.1000 PESO, memo for the transfer"]' -p YOUR_ACCOUNT
 
 The other method operates between funds already deposited in the contract. The structure
 of the input is account, evotoken, extended_asset to pay (exact), asset to receive (limiting).
@@ -158,11 +158,6 @@ where the file addliquidity.json contains:
 The same idea applies to the operations of removing liquidity and inittoken.
 Typically, a graphical user interface will perform this kind of multiaction transactions.
 
-Finally, to change the fee for operating through EOSPESO run:
-
-    cleos push action evolutiondex changefee '["4,EOSPESO", "37"]' -p FEE_CONTROLLER
-
-and the fee will now be set to 0.37%. Or you can configure a contract to perform
-the *changefee* action.
-
-Check the commands of wevotethefee [here](wevotethefee/vote_commands.md).
+The fee value will be governed by the liquidity providers using the
+smart contract wevotethefee.
+Check the commands of wevotethefee [here](wevotethefee/README.md).

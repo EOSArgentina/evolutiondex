@@ -8,13 +8,13 @@ Vote the fee value 0.3% for the evotoken EVO.
 
     cleos push action wevotethefee votefee '["YOUR_ACCOUNT", "EVO", "30"]' -p YOUR_ACCOUNT
 
-Update the fee value for the evotoken EVO. This will set the fee value to the median
-of the votes. Anyone can execute this action. Consider running this action each time
-you send a vote, in the same transaction.
+Remark: the possible fee values in this version are 10, 15, 20, 30, 50, 75, 100. 
+Values less than 10 or greater than 100 will be rejected. Intermediate values will be rounded upwards. In future versions, other values might be possible as well.
 
-    cleos push action wevotethefee updatefee '["EVO"]' -p YOUR_ACCOUNT
+The fee value will automatically update to the median of the current votes
+each time a vote is entered, a voter's pool token balance is modified or
+a vote is closed.
 
 Close your vote for the evotoken EVO:
 
     cleos push action wevotethefee closevote '["YOUR_ACCOUNT", "EVO"]' -p YOUR_ACCOUNT
-
